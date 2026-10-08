@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Rompecabezas de Leon R.P.D.</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .game-shadow {
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.25), 0 8px 10px -6px rgba(15, 23, 42, 0.2);
+    }
+    .piece-shadow {
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+    }
+    .slot-inner-shadow {
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.15);
+    }
+    /* Animación de destello al colocar una pieza */
+    @keyframes snapGlow {
+      0% { transform: scale(1); filter: brightness(1); }
+      50% { transform: scale(1.06); filter: brightness(1.3) drop-shadow(0 0 10px #facc15); }
+      100% { transform: scale(1); filter: brightness(1); }
+    }
+    .animate-snap {
+      animation: snapGlow 0.25s ease-out;
+    }
+    /* Estilo de la pieza arrastrada */
+    .dragging-piece {
+      z-index: 50 !important;
+      opacity: 0.95;
+      cursor: grabbing !important;
+      filter: drop-shadow(0 15px 25px rgba(0,0,0,0.4));
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-amber-100 via-orange-50 to-blue-100 min-h-screen text-slate-800 flex flex-col items-center justify-between p-2 sm:p-4">
+
+  <!-- Encabezado Principal -->
+  <header class="w-full max-w-4xl flex flex-wrap items-center justify-between gap-3 bg-white/90 backdrop-blur-md px-4 py-3 rounded-2xl border-2 border-amber-300 game-shadow">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center text-white text-2xl shadow-inner border-2 border-amber-600">
+        🦁
+      </div>
+      <div>
+        <h1 class="text-xl sm:text-2xl font-black text-slate-800 tracking-wide flex items-center gap-2">
+          LEON PUZZLE <span class="text-xs bg-blue-700 text-yellow-300 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">R.P.D.</span>
+        </h1>
+        <p class="text-xs font-semibold text-slate-500">¡Arma las piezas del oficial más tierno!</p>
+      </div>
+    </div>
+
+    <!-- Estadísticas rápidas -->
+    <div class="flex items-center gap-2 sm:gap-4 bg-amber-50/80 px-3 py-1.5 rounded-xl border border-amber-200">
+      <div class="text-center">
+        <span class="text-[10px] uppercase font-bold text-amber-600 block">Tiempo</span>
+        <span id="timerText" class="text-base sm:text-lg font-black font-mono text-slate-800">00:00</span>
+      </div>
+      <div class="h-6 w-px bg-amber-200"></div>
+      <div class="text-center">
+        <span class="text-[10px] uppercase font-bold text-amber-600 block">Movs</span>
+        <span id="movesCount" class="text-base sm:text-lg font-black font-mono text-slate-800">0</span>
+      </div>
+      <div class="h-6 w-px bg-amber-200"></div>
+      <div class="text-center">
+        <span class="text-[10px] uppercase font-bold text-amber-600 block">Progreso</span>
+        <span id="progressText" class="text-base sm:text-lg font-black font-mono text-blue-600">0%</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Barra de Configuración y Modos -->
+  <section class="w-full max-w-4xl mt-3 flex flex-wrap items-center justify-between gap-2 bg-white/80 backdrop-blur p-2.5 rounded-2xl border border-slate-200 shadow-sm text-xs sm:text-sm font-bold">
+    <!-- Selector de Modo -->
+    <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+      <button id="btnModeSnap" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white shadow-sm transition">
+        🧩 Arrastrar
+      </button>
+      <button id="btnModeSlide" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">
+        🔄 Deslizante
+      </button>
+    </div>
+
+    <!-- Dificultad -->
+    <div class="flex items-center gap-1.5">
+      <span class="text-slate-500 font-semibold hidden sm:inline">Nivel:</span>
+      <select id="gridSizeSelect" class="bg-amber-100 text-amber-900 font-bold border border-amber-300 rounded-xl px-2.5 py-1.5 outline-none cursor-pointer hover:bg-amber-200 transition">
+        <option value="3">Fácil (3 × 3)</option>
+        <option value="4" selected>Medio (4 × 4)</option>
+        <option value="5">Experto (5 × 5)</option>
+      </select>
+    </div>
+
+    <!-- Selección de Imágenes -->
+    <div class="flex items-center gap-1.5">
+      <select id="imageSelect" class="bg-blue-50 text-blue-900 font-bold border border-blue-200 rounded-xl px-2.5 py-1.5 outline-none cursor-pointer hover:bg-blue-100 transition">
+        <option value="car">🚗 Leon con Auto R.P.D.</option>
+        <option value="officer">🦁 Leon Agente R.P.D.</option>
+        <option value="crown">👑 Leoncito Rey</option>
+        <option value="custom">📁 Subir mi propia imagen...</option>
+      </select>
+      <input type="file" id="fileInput" accept="image/*" class="hidden">
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="flex items-center gap-1.5">
+      <button id="btnGhost" title="Mostrar/ocultar guía de fondo" class="p-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 transition">
+        👁️
+      </button>
+      <button id="btnSound" title="Silenciar / Activar sonido" class="p-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 transition">
+        🔊
+      </button>
+      <button id="btnRestart" class="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-md hover:shadow-lg transition">
+        <span>🔄</span> Mezclar
+      </button>
+    </div>
+  </section>
+
+  <!-- Área de Juego Principal -->
+  <main class="w-full max-w-4xl my-3 flex-1 flex flex-col lg:flex-row items-center justify-center gap-4 sm:gap-6">
+    
+    <!-- Tablero de Rompecabezas -->
+    <div class="flex flex-col items-center">
+      <div id="boardContainer" class="relative bg-amber-900/10 p-2 sm:p-3 rounded-2xl sm:rounded-3xl border-4 border-amber-400 game-shadow bg-white/70">
+        
+        <!-- Tablero de Ranuras / Canvas del Puzzle -->
+        <div id="puzzleBoard" class="relative overflow-hidden rounded-xl sm:rounded-2xl bg-amber-950/10 border-2 border-amber-300/60" style="width: 320px; height: 320px;">
+          <!-- Imagen fantasma de ayuda (guía) -->
+          <div id="ghostImage" class="absolute inset-0 bg-cover bg-center pointer-events-none opacity-20 transition-opacity duration-300"></div>
+          <!-- Capa de ranuras o fichas -->
+          <div id="slotsGrid" class="absolute inset-0 grid"></div>
+        </div>
+
+      </div>
+
+      <!-- Barra de progreso visual -->
+      <div class="w-full max-w-xs sm:max-w-sm mt-2.5 bg-slate-200 h-2.5 rounded-full overflow-hidden border border-slate-300 shadow-inner">
+        <div id="progressBar" class="bg-gradient-to-r from-amber-400 to-green-500 h-full w-0 transition-all duration-300"></div>
+      </div>
+    </div>
+
+    <!-- Bandeja de Piezas (Solo Modo Arrastrar) -->
+    <div id="trayWrapper" class="w-full lg:w-72 flex flex-col items-center bg-white/85 backdrop-blur-md p-3 rounded-2xl border-2 border-blue-200 game-shadow">
+      <div class="flex items-center justify-between w-full mb-2 px-1">
+        <h3 class="text-xs uppercase font-extrabold text-blue-900 tracking-wider flex items-center gap-1.5">
+          <span>📦</span> Piezas Sueltas
+        </h3>
+        <span id="trayCounter" class="text-xs font-bold text-slate-500">0 piezas</span>
+      </div>
+
+      <!-- Contenedor scrollable de fichas sueltas -->
+      <div id="piecesTray" class="w-full min-h-[140px] max-h-[320px] lg:max-h-[360px] overflow-y-auto p-2 bg-blue-50/70 rounded-xl border border-blue-100 flex flex-wrap gap-2 items-center justify-center content-start">
+        <!-- Las piezas se inyectan dinámicamente -->
+      </div>
+      <p class="text-[11px] text-slate-500 text-center mt-2 italic">Arrastra la ficha al lugar correspondiente en el tablero</p>
+    </div>
+
+  </main>
+
+  <!-- Modal de Victoria -->
+  <div id="victoryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center border-4 border-amber-400 game-shadow transform scale-95 transition-transform duration-300">
+      <div class="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto text-4xl shadow-inner border-2 border-amber-300 mb-3 animate-bounce">
+        🏆
+      </div>
+      <h2 class="text-2xl font-black text-slate-800">¡MISIÓN CUMPLIDA!</h2>
+      <p class="text-sm font-semibold text-slate-500 mt-1">¡Has completado el rompecabezas de Leon!</p>
+      
+      <div class="grid grid-cols-2 gap-3 my-4 bg-amber-50 p-3 rounded-2xl border border-amber-200">
+        <div>
+          <span class="text-[11px] text-slate-500 font-bold uppercase block">Tiempo</span>
+          <span id="finalTime" class="text-lg font-black text-amber-700 font-mono">00:00</span>
+        </div>
+        <div>
+          <span class="text-[11px] text-slate-500 font-bold uppercase block">Movimientos</span>
+          <span id="finalMoves" class="text-lg font-black text-amber-700 font-mono">0</span>
+        </div>
+      </div>
+
+      <div class="flex gap-2">
+        <button id="btnPlayAgain" class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold shadow-md hover:shadow-lg transition">
+          ¡Jugar Otra Vez!
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Canvas oculto para confeti -->
+  <canvas id="confettiCanvas" class="fixed inset-0 pointer-events-none z-40"></canvas>
+
+  <!-- Pie de Página -->
+  <footer class="text-center text-[11px] text-slate-500 font-bold py-1">
+    Leon Kennedy • Raccoon Police Department Fan Rompecabezas • ¡100% Interactivo!
+  </footer>
+
+  <script>
+    // SVG 1: Leon con el auto patrulla RPD
+    const SVG_LEON_CAR = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+      <defs>
+        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#bae6fd"/>
+          <stop offset="60%" stop-color="#e0f2fe"/>
+          <stop offset="100%" stop-color="#fed7aa"/>
+        </linearGradient>
+        <radialGradient id="sunGlow" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0%" stop-color="#fef08a"/>
+          <stop offset="100%" stop-color="#fed7aa" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <!-- Fondo suave con nubes -->
+      <rect width="600" height="600" fill="url(#skyGrad)"/>
+      <circle cx="500" cy="120" r="80" fill="url(#sunGlow)"/>
+      
+      <!-- Asfalto caricatura -->
+      <path d="M 0 460 C 200 450, 400 470, 600 460 L 600 600 L 0 600 Z" fill="#475569"/>
+      <line x1="80" y1="530" x2="160" y2="530" stroke="#fef08a" stroke-width="12" stroke-linecap="round"/>
+      <line x1="260" y1="530" x2="340" y2="530" stroke="#fef08a" stroke-width="12" stroke-linecap="round"/>
+      <line x1="440" y1="530" x2="520" y2="530" stroke="#fef08a" stroke-width="12" stroke-linecap="round"/>
+
+      <!-- Humito caricatura -->
+      <circle cx="520" cy="420" r="16" fill="#cbd5e1" opacity="0.8"/>
+      <circle cx="545" cy="405" r="12" fill="#e2e8f0" opacity="0.8"/>
+      <circle cx="565" cy="415" r="8" fill="#f1f5f9" opacity="0.8"/>
+
+      <!-- Ruedas del coche -->
+      <g>
+        <!-- Rueda trasera -->
+        <circle cx="430" cy="450" r="50" fill="#1e293b"/>
+        <circle cx="430" cy="450" r="32" fill="#64748b"/>
+        <circle cx="430" cy="450" r="16" fill="#94a3b8"/>
+        <!-- Rueda delantera -->
+        <circle cx="210" cy="450" r="50" fill="#1e293b"/>
+        <circle cx="210" cy="450" r="32" fill="#64748b"/>
+        <circle cx="210" cy="450" r="16" fill="#94a3b8"/>
+      </g>
+
+      <!-- Carrocería Patrulla R.P.D. -->
+      <!-- Cabina y techo -->
+      <path d="M 230 300 L 260 210 Q 275 190 320 185 L 430 185 Q 460 190 475 220 L 490 300 Z" fill="#ffffff" stroke="#1e293b" stroke-width="10" stroke-linejoin="round"/>
+      <!-- Ventana grande -->
+      <path d="M 265 290 L 285 220 Q 295 205 330 205 L 430 205 L 450 290 Z" fill="#93c5fd" stroke="#1e293b" stroke-width="6"/>
+
+      <!-- Sirena Policial -->
+      <g transform="translate(350, 160)">
+        <rect x="-45" y="0" width="90" height="22" rx="10" fill="#334155" stroke="#0f172a" stroke-width="5"/>
+        <path d="M -35 0 Q -35 -20 -15 -20 L -5 -20 L -5 0 Z" fill="#ef4444"/>
+        <path d="M 5 0 Q 5 -20 25 -20 L 35 -20 L 35 0 Z" fill="#3b82f6"/>
+        <rect x="-5" y="-20" width="10" height="20" fill="#f8fafc"/>
+        <!-- Destellos sirena -->
+        <line x1="-40" y1="-28" x2="-30" y2="-20" stroke="#f87171" stroke-width="4" stroke-linecap="round"/>
+        <line x1="40" y1="-28" x2="30" y2="-20" stroke="#60a5fa" stroke-width="4" stroke-linecap="round"/>
+        <line x1="0" y1="-32" x2="0" y2="-22" stroke="#facc15" stroke-width="4" stroke-linecap="round"/>
+      </g>
+
+      <!-- LEON (DENTRO DEL COCHE) -->
+      <g id="LeonInside" transform="translate(340, 240)">
+        <!-- Melena marrón/dorada -->
+        <circle cx="0" cy="0" r="62" fill="#c26322"/>
+        <circle cx="-42" cy="-25" r="22" fill="#c26322"/>
+        <circle cx="42" cy="-25" r="22" fill="#c26322"/>
+        <circle cx="-45" cy="22" r="22" fill="#c26322"/>
+        <circle cx="45" cy="22" r="22" fill="#c26322"/>
+        <circle cx="0" cy="-50" r="24" fill="#c26322"/>
+
+        <!-- Orejitas -->
+        <circle cx="-38" cy="-35" r="16" fill="#f59e0b" stroke="#854d0e" stroke-width="4"/>
+        <circle cx="-38" cy="-35" r="8" fill="#fcd34d"/>
+        <circle cx="38" cy="-35" r="16" fill="#f59e0b" stroke="#854d0e" stroke-width="4"/>
+        <circle cx="38" cy="-35" r="8" fill="#fcd34d"/>
+
+        <!-- Cara -->
+        <circle cx="0" cy="6" r="48" fill="#fbbf24" stroke="#78350f" stroke-width="5"/>
+        <!-- Mejillas sonrojadas -->
+        <ellipse cx="-28" cy="18" rx="8" ry="5" fill="#f87171" opacity="0.6"/>
+        <ellipse cx="28" cy="18" rx="8" ry="5" fill="#f87171" opacity="0.6"/>
+        <!-- Ojos decididos/tiernos -->
+        <circle cx="-16" cy="2" r="6" fill="#1e293b"/>
+        <circle cx="-14" cy="0" r="2.5" fill="#ffffff"/>
+        <circle cx="16" cy="2" r="6" fill="#1e293b"/>
+        <circle cx="18" cy="0" r="2.5" fill="#ffffff"/>
+        <!-- Cejas valientes estilo Leon Kennedy -->
+        <line x1="-25" y1="-8" x2="-8" y2="-4" stroke="#78350f" stroke-width="4" stroke-linecap="round"/>
+        <line x1="25" y1="-8" x2="8" y2="-4" stroke="#78350f" stroke-width="4" stroke-linecap="round"/>
+        <!-- Bozal y Nariz -->
+        <ellipse cx="0" cy="18" rx="14" ry="10" fill="#fef3c7"/>
+        <path d="M -6 14 Q 0 10 6 14 Q 0 20 -6 14 Z" fill="#451a03"/>
+        <path d="M 0 16 L 0 22 M -4 21 Q 0 25 4 21" stroke="#451a03" stroke-width="3" stroke-linecap="round" fill="none"/>
+
+        <!-- Peinado icónico de Leon (flequillo partido) -->
+        <path d="M -35 -20 Q -10 -45 15 -35 Q 38 -45 35 -15 Q 10 -25 -2 -10 Q -10 -2 0 10 Q -25 2 -35 -20 Z" fill="#b45309" stroke="#78350f" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M -8 -25 Q 12 -22 18 -5" stroke="#d97706" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+        <!-- Patitas sosteniendo el volante -->
+        <circle cx="-25" cy="52" r="12" fill="#fbbf24" stroke="#78350f" stroke-width="4"/>
+        <!-- Volante -->
+        <circle cx="-32" cy="48" r="18" fill="none" stroke="#334155" stroke-width="7"/>
+      </g>
+
+      <!-- Cuerpo inferior del auto -->
+      <path d="M 120 400 L 140 330 Q 150 300 190 300 L 480 300 Q 515 300 525 340 L 535 400 Q 540 435 500 435 L 140 435 Q 115 435 120 400 Z" fill="#1e3a8a" stroke="#0f172a" stroke-width="8"/>
+      <!-- Puerta Blanca del coche con insignia RPD -->
+      <path d="M 290 305 L 430 305 L 420 430 L 285 430 Z" fill="#ffffff" stroke="#1e293b" stroke-width="6"/>
+      <text x="355" y="375" font-family="'Nunito', sans-serif" font-weight="900" font-size="34" fill="#1e3a8a" text-anchor="middle" letter-spacing="2">R.P.D.</text>
+      <!-- Estrella de policía dorada -->
+      <polygon points="355,385 359,397 372,397 362,405 365,417 355,409 345,417 348,405 338,397 351,397" fill="#facc15" stroke="#ca8a04" stroke-width="2"/>
+
+      <!-- Parachoques y luces -->
+      <rect x="100" y="380" width="35" height="35" rx="10" fill="#facc15" stroke="#78350f" stroke-width="5"/>
+      <rect x="90" y="405" width="45" height="25" rx="8" fill="#475569" stroke="#0f172a" stroke-width="5"/>
+      <!-- Luz trasera -->
+      <rect x="525" y="380" width="16" height="25" rx="5" fill="#ef4444" stroke="#7f1d1d" stroke-width="3"/>
+    </svg>`;
+
+    // SVG 2: Leon Agente Táctico de pie
+    const SVG_LEON_OFFICER = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+      <defs>
+        <radialGradient id="bgGlow" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0%" stop-color="#fed7aa"/>
+          <stop offset="100%" stop-color="#fde047" stop-opacity="0.3"/>
+        </radialGradient>
+      </defs>
+      <rect width="600" height="600" fill="#f8fafc"/>
+      <circle cx="300" cy="300" r="260" fill="url(#bgGlow)"/>
+      <circle cx="300" cy="300" r="230" fill="#ffffff" stroke="#e2e8f0" stroke-width="6"/>
+
+      <!-- Sombra en el suelo -->
+      <ellipse cx="300" cy="520" rx="170" ry="24" fill="#cbd5e1" opacity="0.6"/>
+
+      <!-- Cola de León con pompón -->
+      <path d="M 370 450 Q 460 440 460 370 Q 460 340 430 350" fill="none" stroke="#b45309" stroke-width="12" stroke-linecap="round"/>
+      <path d="M 430 345 C 410 320, 460 310, 445 355 Z" fill="#78350f"/>
+
+      <!-- Cuerpo con Chaleco Táctico RPD -->
+      <ellipse cx="300" cy="420" rx="90" ry="85" fill="#1e3a8a" stroke="#0f172a" stroke-width="8"/>
+      <!-- Detalles tácticos: correas y parches -->
+      <rect x="235" y="360" width="130" height="75" rx="12" fill="#1e293b" stroke="#0f172a" stroke-width="5"/>
+      <text x="300" y="410" font-family="'Nunito', sans-serif" font-weight="900" font-size="28" fill="#ffffff" text-anchor="middle" letter-spacing="3">R.P.D.</text>
+      <!-- Radio transmisor en el hombro -->
+      <rect x="220" y="340" width="22" height="35" rx="4" fill="#0f172a"/>
+      <line x1="231" y1="340" x2="231" y2="310" stroke="#0f172a" stroke-width="5" stroke-linecap="round"/>
+
+      <!-- Patas delanteras con guantes tácticos -->
+      <rect x="230" y="450" width="50" height="60" rx="20" fill="#1e293b" stroke="#0f172a" stroke-width="6"/>
+      <rect x="320" y="450" width="50" height="60" rx="20" fill="#1e293b" stroke="#0f172a" stroke-width="6"/>
+      <!-- Almohadillas / garras -->
+      <circle cx="245" cy="495" r="6" fill="#f59e0b"/>
+      <circle cx="265" cy="495" r="6" fill="#f59e0b"/>
+      <circle cx="335" cy="495" r="6" fill="#f59e0b"/>
+      <circle cx="355" cy="495" r="6" fill="#f59e0b"/>
+
+      <!-- CABEZA DE LEON -->
+      <g transform="translate(300, 230)">
+        <!-- Gran Melena esponjosa -->
+        <circle cx="0" cy="0" r="120" fill="#c26322" stroke="#78350f" stroke-width="7"/>
+        <circle cx="-80" cy="-60" r="45" fill="#c26322"/>
+        <circle cx="80" cy="-60" r="45" fill="#c26322"/>
+        <circle cx="-100" cy="30" r="45" fill="#c26322"/>
+        <circle cx="100" cy="30" r="45" fill="#c26322"/>
+        <circle cx="0" cy="-110" r="48" fill="#c26322"/>
+
+        <!-- Orejas -->
+        <circle cx="-75" cy="-80" r="30" fill="#f59e0b" stroke="#854d0e" stroke-width="6"/>
+        <circle cx="-75" cy="-80" r="16" fill="#fde68a"/>
+        <circle cx="75" cy="-80" r="30" fill="#f59e0b" stroke="#854d0e" stroke-width="6"/>
+        <circle cx="75" cy="-80" r="16" fill="#fde68a"/>
+
+        <!-- Cara -->
+        <circle cx="0" cy="10" r="95" fill="#fbbf24" stroke="#78350f" stroke-width="8"/>
+        <!-- Chapitas tiernas -->
+        <ellipse cx="-55" cy="35" rx="16" ry="10" fill="#f87171" opacity="0.6"/>
+        <ellipse cx="55" cy="35" rx="16" ry="10" fill="#f87171" opacity="0.6"/>
+
+        <!-- Ojos Grandes Kawaii decididos -->
+        <circle cx="-35" cy="10" r="14" fill="#0f172a"/>
+        <circle cx="-30" cy="5" r="5" fill="#ffffff"/>
+        <circle cx="35" cy="10" r="14" fill="#0f172a"/>
+        <circle cx="40" cy="5" r="5" fill="#ffffff"/>
+
+        <!-- Cejas estilizadas -->
+        <path d="M -55 -15 L -20 -8" stroke="#78350f" stroke-width="7" stroke-linecap="round"/>
+        <path d="M 55 -15 L 20 -8" stroke="#78350f" stroke-width="7" stroke-linecap="round"/>
+
+        <!-- Hocico y Sonrisa -->
+        <ellipse cx="0" cy="35" rx="26" ry="18" fill="#fffbeb"/>
+        <path d="M -12 28 Q 0 20 12 28 Q 0 40 -12 28 Z" fill="#451a03"/>
+        <path d="M 0 32 L 0 42 M -8 40 Q 0 48 8 40" stroke="#451a03" stroke-width="5" stroke-linecap="round" fill="none"/>
+
+        <!-- El icónico Peinado de Leon S. Kennedy -->
+        <path d="M -70 -40 Q -20 -90 30 -70 Q 75 -90 70 -30 Q 20 -50 -5 -20 Q -20 -5 0 20 Q -50 0 -70 -40 Z" fill="#b45309" stroke="#78350f" stroke-width="7" stroke-linejoin="round"/>
+        <!-- Reflejos del cabello -->
+        <path d="M -20 -50 Q 20 -45 35 -15" stroke="#f59e0b" stroke-width="5" fill="none" stroke-linecap="round"/>
+      </g>
+
+      <!-- Letras gigantes LEON abajo -->
+      <g transform="translate(300, 560)">
+        <text x="0" y="0" font-family="'Nunito', sans-serif" font-weight="900" font-size="52" fill="#d97706" text-anchor="middle" stroke="#78350f" stroke-width="4" paint-order="stroke fill" letter-spacing="4">LEON</text>
+      </g>
+    </svg>`;
+
+    // SVG 3: Leoncito con Corona
+    const SVG_LEON_CROWN = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+      <rect width="600" height="600" fill="#fefce8"/>
+      <circle cx="300" cy="300" r="240" fill="#fef08a" opacity="0.4"/>
+      <!-- Corona Real -->
+      <polygon points="250,140 230,80 270,110 300,60 330,110 370,80 350,140" fill="#facc15" stroke="#854d0e" stroke-width="8" stroke-linejoin="round"/>
+      <circle cx="230" cy="80" r="8" fill="#ef4444"/>
+      <circle cx="300" cy="60" r="8" fill="#3b82f6"/>
+      <circle cx="370" cy="80" r="8" fill="#10b981"/>
+      
+      <!-- Melena -->
+      <g transform="translate(300, 280)">
+        <circle cx="0" cy="0" r="140" fill="#d97706" stroke="#92400e" stroke-width="8"/>
+        <!-- Orejas -->
+        <circle cx="-90" cy="-90" r="34" fill="#f59e0b" stroke="#92400e" stroke-width="6"/>
+        <circle cx="-90" cy="-90" r="18" fill="#fef08a"/>
+        <circle cx="90" cy="-90" r="34" fill="#f59e0b" stroke="#92400e" stroke-width="6"/>
+        <circle cx="90" cy="-90" r="18" fill="#fef08a"/>
+
+        <!-- Cara -->
+        <circle cx="0" cy="15" r="105" fill="#fcd34d" stroke="#92400e" stroke-width="8"/>
+        <!-- Ojos Grandes tiernos -->
+        <circle cx="-40" cy="10" r="15" fill="#1e293b"/>
+        <circle cx="-35" cy="5" r="5" fill="#ffffff"/>
+        <circle cx="40" cy="10" r="15" fill="#1e293b"/>
+        <circle cx="45" cy="5" r="5" fill="#ffffff"/>
+        <!-- Mejillas -->
+        <circle cx="-60" cy="30" r="14" fill="#f87171" opacity="0.6"/>
+        <circle cx="60" cy="30" r="14" fill="#f87171" opacity="0.6"/>
+        <!-- Hocico -->
+        <ellipse cx="0" cy="35" rx="30" ry="20" fill="#fffbeb"/>
+        <path d="M -10 28 Q 0 20 10 28 Q 0 40 -10 28 Z" fill="#78350f"/>
+        <path d="M -10 38 Q 0 46 10 38" stroke="#78350f" stroke-width="5" stroke-linecap="round" fill="none"/>
+      </g>
+
+      <!-- Cuerpo Sentado -->
+      <ellipse cx="300" cy="460" rx="80" ry="60" fill="#f59e0b" stroke="#92400e" stroke-width="8"/>
+      <ellipse cx="300" cy="470" rx="45" ry="35" fill="#fef08a"/>
+      <!-- Patitas -->
+      <circle cx="250" cy="510" r="26" fill="#fcd34d" stroke="#92400e" stroke-width="6"/>
+      <circle cx="350" cy="510" r="26" fill="#fcd34d" stroke="#92400e" stroke-width="6"/>
+    </svg>`;
+
+    // Generador de audio sin librerías externas
+    class SoundController {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playPlop() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        const now = this.ctx.currentTime;
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(600, now + 0.08);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      }
+
+      playSnap() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Doble tono brillante
+        [523.25, 659.25].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+          gain.gain.setValueAtTime(0.3, now + idx * 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.15);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + idx * 0.05);
+          osc.stop(now + idx * 0.05 + 0.15);
+        });
+      }
+
+      playSlide() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.linearRampToValueAtTime(180, now + 0.06);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.06);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.06);
+      }
+
+      playVictory() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99]; // Arpegio triunfal C mayor
+        const now = this.ctx.currentTime;
+        notes.forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + i * 0.1);
+          gain.gain.setValueAtTime(0.35, now + i * 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.4);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.1);
+          osc.stop(now + i * 0.1 + 0.4);
+        });
+      }
+    }
+
+    const sound = new SoundController();
+
+    // Estado del juego
+    const state = {
+      mode: 'snap', // 'snap' (arrastrar) o 'slide' (deslizante)
+      gridSize: 4, // 3x3, 4x4 o 5x5
+      currentImageKey: 'car',
+      currentImageDataUrl: '',
+      boardDimension: 340, // Se adaptará según pantalla
+      moves: 0,
+      timerSeconds: 0,
+      timerInterval: null,
+      isStarted: false,
+      isCompleted: false,
+      showGhost: true,
+      
+      // Para modo Snap (Arrastrar)
+      placedPieces: {}, // slotIndex -> pieceIndex
+      
+      // Para modo Slide (Deslizante)
+      slideTiles: [], // arreglo de índices de piezas con un valor vacío (-1)
+      emptyTileIndex: -1
+    };
+
+    // Referencias al DOM
+    const boardContainer = document.getElementById('boardContainer');
+    const puzzleBoard = document.getElementById('puzzleBoard');
+    const slotsGrid = document.getElementById('slotsGrid');
+    const piecesTray = document.getElementById('piecesTray');
+    const trayWrapper = document.getElementById('trayWrapper');
+    const ghostImage = document.getElementById('ghostImage');
+    const trayCounter = document.getElementById('trayCounter');
+    const timerText = document.getElementById('timerText');
+    const movesCount = document.getElementById('movesCount');
+    const progressText = document.getElementById('progressText');
+    const progressBar = document.getElementById('progressBar');
+    const victoryModal = document.getElementById('victoryModal');
+    const finalTime = document.getElementById('finalTime');
+    const finalMoves = document.getElementById('finalMoves');
+
+    // Botones
+    const btnModeSnap = document.getElementById('btnModeSnap');
+    const btnModeSlide = document.getElementById('btnModeSlide');
+    const gridSizeSelect = document.getElementById('gridSizeSelect');
+    const imageSelect = document.getElementById('imageSelect');
+    const fileInput = document.getElementById('fileInput');
+    const btnGhost = document.getElementById('btnGhost');
+    const btnSound = document.getElementById('btnSound');
+    const btnRestart = document.getElementById('btnRestart');
+    const btnPlayAgain = document.getElementById('btnPlayAgain');
+
+    // Función para convertir SVG a DataURL de alta resolución
+    function svgToDataUrl(svgString) {
+      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
+    }
+
+    // Ajuste responsivo del tamaño del tablero
+    function calculateBoardSize() {
+      const screenW = window.innerWidth;
+      let target = 340;
+      if (screenW < 380) {
+        target = 280;
+      } else if (screenW < 480) {
+        target = 310;
+      } else if (screenW < 768) {
+        target = 340;
+      } else {
+        target = 380;
+      }
+      state.boardDimension = target;
+      puzzleBoard.style.width = `${target}px`;
+      puzzleBoard.style.height = `${target}px`;
+    }
+
+    // Configuración y carga de la imagen activa
+    function loadCurrentImage(callback) {
+      if (state.currentImageKey === 'car') {
+        state.currentImageDataUrl = svgToDataUrl(SVG_LEON_CAR);
+        if (callback) callback();
+      } else if (state.currentImageKey === 'officer') {
+        state.currentImageDataUrl = svgToDataUrl(SVG_LEON_OFFICER);
+        if (callback) callback();
+      } else if (state.currentImageKey === 'crown') {
+        state.currentImageDataUrl = svgToDataUrl(SVG_LEON_CROWN);
+        if (callback) callback();
+      }
+    }
+
+    // Renderizar cuadrícula y ranuras del tablero
+    function setupBoard() {
+      calculateBoardSize();
+      const n = state.gridSize;
+      const tileSize = state.boardDimension / n;
+
+      slotsGrid.innerHTML = '';
+      slotsGrid.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+      slotsGrid.style.gridTemplateRows = `repeat(${n}, 1fr)`;
+
+      ghostImage.style.backgroundImage = `url("${state.currentImageDataUrl}")`;
+      ghostImage.style.opacity = state.showGhost ? '0.25' : '0';
+
+      if (state.mode === 'snap') {
+        // En modo Snap, cada ranura es un drop-target
+        for (let i = 0; i < n * n; i++) {
+          const slot = document.createElement('div');
+          slot.className = 'slot relative border border-amber-300/40 slot-inner-shadow flex items-center justify-center';
+          slot.dataset.slotIndex = i;
+          slotsGrid.appendChild(slot);
+        }
+      }
+    }
+
+    // Inicializar Modo Snap (Arrastrar piezas desde la bandeja)
+    function initSnapGame() {
+      setupBoard();
+      piecesTray.innerHTML = '';
+      state.placedPieces = {};
+      trayWrapper.classList.remove('hidden');
+
+      const n = state.gridSize;
+      const total = n * n;
+      const tileSize = state.boardDimension / n;
+
+      // Crear índices y mezclarlos
+      const pieceIndices = [];
+      for (let i = 0; i < total; i++) pieceIndices.push(i);
+      
+      // Shuffle Fisher-Yates
+      for (let i = pieceIndices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pieceIndices[i], pieceIndices[j]] = [pieceIndices[j], pieceIndices[i]];
+      }
+
+      // Crear fichas en la bandeja
+      pieceIndices.forEach((pieceIdx) => {
+        const row = Math.floor(pieceIdx / n);
+        const col = pieceIdx % n;
+
+        const piece = document.createElement('div');
+        piece.className = 'puzzle-piece cursor-grab active:cursor-grabbing rounded-lg piece-shadow border border-amber-400 bg-cover bg-no-repeat transition-transform hover:scale-105';
+        piece.dataset.pieceIndex = pieceIdx;
+
+        // Tamaño proporcional para la bandeja
+        const trayPieceSize = Math.max(50, Math.floor(220 / n));
+        piece.style.width = `${trayPieceSize}px`;
+        piece.style.height = `${trayPieceSize}px`;
+
+        // Coordenadas del recorte de la imagen original
+        piece.style.backgroundImage = `url("${state.currentImageDataUrl}")`;
+        piece.style.backgroundSize = `${trayPieceSize * n}px ${trayPieceSize * n}px`;
+        piece.style.backgroundPosition = `-${col * trayPieceSize}px -${row * trayPieceSize}px`;
+
+        // Datos para escalado dinámico al arrastrar
+        piece.dataset.nativeTileSize = tileSize;
+        piece.dataset.trayTileSize = trayPieceSize;
+        piece.dataset.col = col;
+        piece.dataset.row = row;
+
+        attachDragListeners(piece);
+        piecesTray.appendChild(piece);
+      });
+
+      updateProgress();
+      updateTrayCounter();
+    }
+
+    // Lógica universal de arrastre (Mouse y Pantallas Táctiles usando Pointer Events)
+    function attachDragListeners(piece) {
+      let isDragging = false;
+      let startX, startY;
+      let initialLeft, initialTop;
+      let clone = null;
+      let placeholder = null;
+
+      piece.addEventListener('pointerdown', (e) => {
+        if (piece.parentElement.classList.contains('slot')) return; // Ya colocada fija
+        sound.init();
+        sound.playPlop();
+
+        isDragging = true;
+        piece.setPointerCapture(e.pointerId);
+
+        const rect = piece.getBoundingClientRect();
+        startX = e.clientX;
+        startY = e.clientY;
+
+        // Crear clon flotante que se mueve con el dedo/cursor con el tamaño del tablero
+        const n = state.gridSize;
+        const targetSize = state.boardDimension / n;
+        const col = parseInt(piece.dataset.col);
+        const row = parseInt(piece.dataset.row);
+
+        clone = piece.cloneNode(true);
+        clone.classList.add('dragging-piece');
+        clone.style.position = 'fixed';
+        clone.style.width = `${targetSize}px`;
+        clone.style.height = `${targetSize}px`;
+        clone.style.backgroundSize = `${state.boardDimension}px ${state.boardDimension}px`;
+        clone.style.backgroundPosition = `-${col * targetSize}px -${row * targetSize}px`;
+        clone.style.left = `${rect.left}px`;
+        clone.style.top = `${rect.top}px`;
+        clone.style.pointerEvents = 'none';
+        document.body.appendChild(clone);
+
+        piece.style.opacity = '0.3';
+      });
+
+      piece.addEventListener('pointermove', (e) => {
+        if (!isDragging || !clone) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        const rect = piece.getBoundingClientRect();
+        clone.style.left = `${rect.left + dx}px`;
+        clone.style.top = `${rect.top + dy}px`;
+
+        // Resaltar ranura debajo
+        highlightHoverSlot(e.clientX, e.clientY);
+      });
+
+      const endDrag = (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        try { piece.releasePointerCapture(e.pointerId); } catch (_) {}
+
+        if (clone) {
+          clone.remove();
+          clone = null;
+        }
+        piece.style.opacity = '1';
+        clearSlotHighlights();
+
+        // Verificar si se soltó sobre la ranura correcta
+        checkDropTarget(piece, e.clientX, e.clientY);
+      };
+
+      piece.addEventListener('pointerup', endDrag);
+      piece.addEventListener('pointercancel', endDrag);
+    }
+
+    function highlightHoverSlot(x, y) {
+      clearSlotHighlights();
+      const elem = document.elementFromPoint(x, y);
+      const slot = elem ? elem.closest('.slot') : null;
+      if (slot && !slot.hasChildNodes()) {
+        slot.classList.add('bg-amber-300/40', 'border-amber-500');
+      }
+    }
+
+    function clearSlotHighlights() {
+      document.querySelectorAll('.slot').forEach(s => {
+        s.classList.remove('bg-amber-300/40', 'border-amber-500');
+      });
+    }
+
+    function checkDropTarget(piece, dropX, dropY) {
+      const pieceIdx = parseInt(piece.dataset.pieceIndex);
+      const elem = document.elementFromPoint(dropX, dropY);
+      const slot = elem ? elem.closest('.slot') : null;
+
+      if (!slot) return; // Fuera del tablero
+
+      const slotIdx = parseInt(slot.dataset.slotIndex);
+      incrementMove();
+
+      // Regla: ¿Es el lugar exacto de la pieza? (Rompecabezas magnético)
+      if (slotIdx === pieceIdx && !slot.hasChildNodes()) {
+        snapPieceIntoSlot(piece, slot, slotIdx);
+      } else {
+        // Sonido suave de fallo o desvío
+        sound.playSlide();
+      }
+    }
+
+    function snapPieceIntoSlot(piece, slot, slotIdx) {
+      sound.playSnap();
+
+      // Ajustar dimensiones exactas del tablero
+      const n = state.gridSize;
+      const targetSize = state.boardDimension / n;
+      const col = parseInt(piece.dataset.col);
+      const row = parseInt(piece.dataset.row);
+
+      piece.style.width = '100%';
+      piece.style.height = '100%';
+      piece.style.borderRadius = '0';
+      piece.style.boxShadow = 'none';
+      piece.style.border = 'none';
+      piece.style.cursor = 'default';
+      piece.style.backgroundSize = `${state.boardDimension}px ${state.boardDimension}px`;
+      piece.style.backgroundPosition = `-${col * targetSize}px -${row * targetSize}px`;
+
+      piece.classList.remove('hover:scale-105', 'piece-shadow');
+      piece.classList.add('animate-snap');
+
+      slot.appendChild(piece);
+      state.placedPieces[slotIdx] = slotIdx;
+
+      updateProgress();
+      updateTrayCounter();
+      checkVictory();
+    }
+
+    // Modo Rompecabezas Deslizante
+    function initSlideGame() {
+      setupBoard();
+      piecesTray.innerHTML = '';
+      trayWrapper.classList.add('hidden'); // No se requiere bandeja en modo deslizante
+
+      const n = state.gridSize;
+      const total = n * n;
+      const tileSize = state.boardDimension / n;
+
+      // Generar piezas ordenadas
+      state.slideTiles = [];
+      for (let i = 0; i < total - 1; i++) {
+        state.slideTiles.push(i);
+      }
+      state.slideTiles.push(-1); // El último es el espacio vacío
+      state.emptyTileIndex = total - 1;
+
+      // Mezclar de manera resoluble
+      shuffleSolvableSlidingPuzzle();
+      renderSlideBoard();
+      updateProgress();
+    }
+
+    function shuffleSolvableSlidingPuzzle() {
+      const n = state.gridSize;
+      const moves = n * n * 25; // 200+ movimientos aleatorios válidos
+      const directions = [-1, 1, -n, n];
+
+      for (let i = 0; i < moves; i++) {
+        const empty = state.emptyTileIndex;
+        const validNeighbors = [];
+
+        // Arriba
+        if (empty >= n) validNeighbors.push(empty - n);
+        // Abajo
+        if (empty < n * (n - 1)) validNeighbors.push(empty + n);
+        // Izquierda
+        if (empty % n !== 0) validNeighbors.push(empty - 1);
+        // Derecha
+        if (empty % n !== n - 1) validNeighbors.push(empty + 1);
+
+        const chosen = validNeighbors[Math.floor(Math.random() * validNeighbors.length)];
+        // Intercambiar
+        state.slideTiles[empty] = state.slideTiles[chosen];
+        state.slideTiles[chosen] = -1;
+        state.emptyTileIndex = chosen;
+      }
+    }
+
+    function renderSlideBoard() {
+      slotsGrid.innerHTML = '';
+      const n = state.gridSize;
+      const tileSize = state.boardDimension / n;
+
+      state.slideTiles.forEach((tileValue, currentIndex) => {
+        const slot = document.createElement('div');
+        slot.className = 'relative flex items-center justify-center border border-amber-300/40 select-none';
+        
+        if (tileValue === -1) {
+          slot.className += ' bg-amber-950/20';
+        } else {
+          const piece = document.createElement('div');
+          piece.className = 'w-full h-full cursor-pointer bg-cover bg-no-repeat transition-all active:brightness-95';
+          const row = Math.floor(tileValue / n);
+          const col = tileValue % n;
+
+          piece.style.backgroundImage = `url("${state.currentImageDataUrl}")`;
+          piece.style.backgroundSize = `${state.boardDimension}px ${state.boardDimension}px`;
+          piece.style.backgroundPosition = `-${col * tileSize}px -${row * tileSize}px`;
+
+          // Número indicador tenue para ayudar al usuario
+          const badge = document.createElement('span');
+          badge.className = 'absolute top-1 left-1 bg-black/40 text-white font-mono text-[9px] px-1 rounded';
+          badge.innerText = tileValue + 1;
+          piece.appendChild(badge);
+
+          piece.addEventListener('click', () => handleSlideTileClick(currentIndex));
+          slot.appendChild(piece);
+        }
+
+        slotsGrid.appendChild(slot);
+      });
+    }
+
+    function handleSlideTileClick(index) {
+      if (state.isCompleted) return;
+      const n = state.gridSize;
+      const empty = state.emptyTileIndex;
+
+      // Verificar si es vecino directo (Arriba, Abajo, Izquierda, Derecha)
+      const isNeighbor =
+        (index === empty - 1 && empty % n !== 0) ||
+        (index === empty + 1 && index % n !== 0) ||
+        (index === empty - n) ||
+        (index === empty + n);
+
+      if (isNeighbor) {
+        sound.init();
+        sound.playSlide();
+        incrementMove();
+
+        // Mover ficha
+        state.slideTiles[empty] = state.slideTiles[index];
+        state.slideTiles[index] = -1;
+        state.emptyTileIndex = index;
+
+        renderSlideBoard();
+        updateProgress();
+        checkSlideVictory();
+      }
+    }
+
+    function checkSlideVictory() {
+      const total = state.gridSize * state.gridSize;
+      for (let i = 0; i < total - 1; i++) {
+        if (state.slideTiles[i] !== i) return;
+      }
+      // Si todos están ordenados
+      handleVictory();
+    }
+
+    function incrementMove() {
+      startTimerIfNeeded();
+      state.moves++;
+      movesCount.innerText = state.moves;
+    }
+
+    function startTimerIfNeeded() {
+      if (!state.isStarted) {
+        state.isStarted = true;
+        state.timerInterval = setInterval(() => {
+          state.timerSeconds++;
+          const mins = String(Math.floor(state.timerSeconds / 60)).padStart(2, '0');
+          const secs = String(state.timerSeconds % 60).padStart(2, '0');
+          timerText.innerText = `${mins}:${secs}`;
+        }, 1000);
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(state.timerInterval);
+      state.timerInterval = null;
+      state.timerSeconds = 0;
+      state.isStarted = false;
+      timerText.innerText = '00:00';
+      state.moves = 0;
+      movesCount.innerText = '0';
+      state.isCompleted = false;
+    }
+
+    function updateProgress() {
+      const total = state.gridSize * state.gridSize;
+      let placedCount = 0;
+
+      if (state.mode === 'snap') {
+        placedCount = Object.keys(state.placedPieces).length;
+      } else {
+        // En slide contamos cuántos están en su posición exacta
+        state.slideTiles.forEach((val, idx) => {
+          if (val === idx) placedCount++;
+        });
+      }
+
+      const percent = Math.min(100, Math.round((placedCount / total) * 100));
+      progressText.innerText = `${percent}%`;
+      progressBar.style.width = `${percent}%`;
+    }
+
+    function updateTrayCounter() {
+      const count = piecesTray.children.length;
+      trayCounter.innerText = `${count} ${count === 1 ? 'pieza' : 'piezas'}`;
+    }
+
+    function checkVictory() {
+      const total = state.gridSize * state.gridSize;
+      if (Object.keys(state.placedPieces).length === total) {
+        handleVictory();
+      }
+    }
+
+    function handleVictory() {
+      state.isCompleted = true;
+      clearInterval(state.timerInterval);
+      sound.playVictory();
+
+      // Rellenar pieza final en modo slide si faltaba
+      if (state.mode === 'slide') {
+        renderSlideBoard();
+      }
+
+      finalTime.innerText = timerText.innerText;
+      finalMoves.innerText = state.moves;
+
+      victoryModal.classList.remove('hidden');
+      launchConfetti();
+    }
+
+    // Efecto de Confeti con Canvas puro
+    function launchConfetti() {
+      const canvas = document.getElementById('confettiCanvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const particles = [];
+      const colors = ['#f59e0b', '#3b82f6', '#ef4444', '#10b981', '#ec4899', '#fde047'];
+
+      for (let i = 0; i < 120; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height / 2,
+          vx: (Math.random() - 0.5) * 14,
+          vy: (Math.random() - 0.7) * 16,
+          size: Math.random() * 8 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          rotationSpeed: (Math.random() - 0.5) * 10,
+          gravity: 0.35,
+          opacity: 1
+        });
+      }
+
+      let animId;
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let alive = false;
+
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += p.gravity;
+          p.rotation += p.rotationSpeed;
+          p.opacity -= 0.007;
+
+          if (p.opacity > 0) {
+            alive = true;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rotation * Math.PI) / 180);
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = Math.max(0, p.opacity);
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 1.4);
+            ctx.restore();
+          }
+        });
+
+        if (alive) {
+          animId = requestAnimationFrame(animate);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+
+      animate();
+    }
+
+    // Reiniciar juego completo
+    function startNewGame() {
+      resetTimer();
+      victoryModal.classList.add('hidden');
+      loadCurrentImage(() => {
+        if (state.mode === 'snap') {
+          initSnapGame();
+        } else {
+          initSlideGame();
+        }
+      });
+    }
+
+    // Cambio de modo de juego
+    btnModeSnap.addEventListener('click', () => {
+      if (state.mode === 'snap') return;
+      state.mode = 'snap';
+      btnModeSnap.className = 'px-3 py-1.5 rounded-lg bg-blue-600 text-white shadow-sm transition';
+      btnModeSlide.className = 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition';
+      startNewGame();
+    });
+
+    btnModeSlide.addEventListener('click', () => {
+      if (state.mode === 'slide') return;
+      state.mode = 'slide';
+      btnModeSlide.className = 'px-3 py-1.5 rounded-lg bg-blue-600 text-white shadow-sm transition';
+      btnModeSnap.className = 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition';
+      startNewGame();
+    });
+
+    // Dificultad
+    gridSizeSelect.addEventListener('change', (e) => {
+      state.gridSize = parseInt(e.target.value);
+      startNewGame();
+    });
+
+    // Selección de imagen
+    imageSelect.addEventListener('change', (e) => {
+      if (e.target.value === 'custom') {
+        fileInput.click();
+      } else {
+        state.currentImageKey = e.target.value;
+        startNewGame();
+      }
+    });
+
+    // Cargar imagen personalizada del usuario
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          state.currentImageKey = 'custom';
+          state.currentImageDataUrl = event.target.result;
+          resetTimer();
+          victoryModal.classList.add('hidden');
+          if (state.mode === 'snap') initSnapGame();
+          else initSlideGame();
+        };
+        reader.readAsDataURL(file);
+      } else {
+        imageSelect.value = state.currentImageKey;
+      }
+    });
+
+    // Alternar Guía Fantasma
+    btnGhost.addEventListener('click', () => {
+      state.showGhost = !state.showGhost;
+      ghostImage.style.opacity = state.showGhost ? '0.25' : '0';
+      btnGhost.classList.toggle('bg-amber-200', state.showGhost);
+    });
+
+    // Sonido On / Off
+    btnSound.addEventListener('click', () => {
+      sound.muted = !sound.muted;
+      btnSound.innerText = sound.muted ? '🔇' : '🔊';
+    });
+
+    // Botones de Reinicio
+    btnRestart.addEventListener('click', startNewGame);
+    btnPlayAgain.addEventListener('click', startNewGame);
+
+    // Redimensionado de pantalla responsivo
+    window.addEventListener('resize', () => {
+      const prevSize = state.boardDimension;
+      calculateBoardSize();
+      if (Math.abs(prevSize - state.boardDimension) > 20) {
+        startNewGame();
+      }
+    });
+
+    // Inicio automático al cargar la ventana
+    window.addEventListener('DOMContentLoaded', () => {
+      calculateBoardSize();
+      startNewGame();
+    });
+  </script>
+</body>
+</html>
