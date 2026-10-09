@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MemoMaster - Gimnasio de Memoria</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            500: '#10b981',
+                            600: '#059669',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+        .card-inner {
+            transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .animate-pulse-ring {
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-emerald-500 selection:text-black overflow-x-hidden">
+    <canvas id="confettiCanvas" class="fixed inset-0 pointer-events-none z-50 w-full h-full"></canvas>
+
+    <div class="max-w-5xl mx-auto px-4 py-4 md:py-6 flex flex-col min-h-screen justify-between">
+        
+        <!-- Header Principal -->
+        <header class="flex flex-col sm:flex-row items-center justify-between gap-4 pb-4 border-b border-slate-800/80">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-300 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-2xl">
+                    🧠
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black tracking-tight bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
+                        MemoMaster
+                    </h1>
+                    <p class="text-xs font-semibold text-slate-400">Entrenamiento Cognitivo & Memoria</p>
+                </div>
+            </div>
+
+            <!-- Modos de Juego Tabs -->
+            <nav class="flex items-center bg-slate-900/90 border border-slate-800 p-1 rounded-2xl shadow-inner text-xs sm:text-sm font-semibold">
+                <button onclick="switchGameMode('pairs')" id="tab-pairs" class="mode-tab px-3.5 py-2 rounded-xl transition-all duration-200 bg-emerald-500 text-slate-950 font-bold shadow-md">
+                    🃏 Parejas
+                </button>
+                <button onclick="switchGameMode('sequence')" id="tab-sequence" class="mode-tab px-3.5 py-2 rounded-xl transition-all duration-200 text-slate-400 hover:text-white">
+                    ⚡ Secuencia
+                </button>
+                <button onclick="switchGameMode('chimp')" id="tab-chimp" class="mode-tab px-3.5 py-2 rounded-xl transition-all duration-200 text-slate-400 hover:text-white">
+                    🐵 Test Chimpancé
+                </button>
+            </nav>
+
+            <!-- Acciones rápidas (Sonido / Info) -->
+            <div class="flex items-center gap-2">
+                <button id="soundToggleBtn" onclick="toggleAudio()" class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 flex items-center justify-center text-slate-300 hover:text-emerald-400 transition" title="Activar/Silenciar sonido">
+                    <span id="soundIcon">🔊</span>
+                </button>
+                <button onclick="openStatsModal()" class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 flex items-center justify-center text-slate-300 hover:text-emerald-400 transition" title="Estadísticas">
+                    📊
+                </button>
+            </div>
+        </header>
+
+        <!-- Panel de Control y Estadísticas en Vivo -->
+        <main class="flex-1 my-4 flex flex-col items-center">
+            
+            <!-- Dashboard de juego actual -->
+            <div class="w-full bg-slate-900/60 backdrop-blur-md border border-slate-800/80 rounded-2xl p-4 mb-4 flex flex-wrap items-center justify-between gap-3 shadow-xl">
+                <!-- Estadísticas dinámicas -->
+                <div class="flex items-center gap-4 sm:gap-6 font-mono text-sm">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] uppercase font-sans tracking-wider text-slate-400 font-bold">Tiempo</span>
+                        <span id="timerDisplay" class="text-lg font-bold text-emerald-400">00:00</span>
+                    </div>
+                    <div class="h-7 w-[1px] bg-slate-800"></div>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] uppercase font-sans tracking-wider text-slate-400 font-bold" id="stat1Label">Movimientos</span>
+                        <span id="stat1Value" class="text-lg font-bold text-cyan-400">0</span>
+                    </div>
+                    <div class="h-7 w-[1px] bg-slate-800"></div>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] uppercase font-sans tracking-wider text-slate-400 font-bold" id="stat2Label">Puntuación</span>
+                        <span id="stat2Value" class="text-lg font-bold text-amber-400">0</span>
+                    </div>
+                </div>
+
+                <!-- Selectores de dificultad / categoría (Modo Parejas) -->
+                <div id="pairsControls" class="flex flex-wrap items-center gap-2">
+                    <select id="themeSelect" onchange="changeTheme(this.value)" class="bg-slate-800 text-xs font-semibold border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer">
+                        <option value="emojis">🦊 Animales & Vida</option>
+                        <option value="tech">💻 Tecnología & Dev</option>
+                        <option value="space">🚀 Cosmos & Sci-Fi</option>
+                        <option value="food">🍕 Delicias Gourmet</option>
+                    </select>
+
+                    <select id="diffSelect" onchange="changeDifficulty(this.value)" class="bg-slate-800 text-xs font-semibold border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer">
+                        <option value="easy">Fácil (4x3 • 6 Pares)</option>
+                        <option value="medium" selected>Medio (4x4 • 8 Pares)</option>
+                        <option value="hard">Difícil (5x4 • 10 Pares)</option>
+                    </select>
+
+                    <button onclick="usePeekHint()" id="peekBtn" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 text-xs font-bold transition">
+                        <span>👁️</span> <span class="hidden sm:inline">Pista</span> (<span id="hintCount">2</span>)
+                    </button>
+
+                    <button onclick="restartCurrentGame()" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 text-xs font-bold transition shadow-sm">
+                        🔄 Reiniciar
+                    </button>
+                </div>
+
+                <!-- Controles Modo Secuencia -->
+                <div id="sequenceControls" class="hidden flex items-center gap-2">
+                    <span id="sequenceRoundText" class="text-xs font-bold text-slate-400 px-3 py-2 bg-slate-800/80 rounded-xl border border-slate-700">
+                        Nivel: <strong class="text-emerald-400 font-mono text-sm" id="seqLevel">1</strong>
+                    </span>
+                    <button onclick="restartSequenceGame()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 text-xs font-bold transition">
+                        Comenzar / Reiniciar
+                    </button>
+                </div>
+
+                <!-- Controles Modo Chimp -->
+                <div id="chimpControls" class="hidden flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-400 px-3 py-2 bg-slate-800/80 rounded-xl border border-slate-700">
+                        Objetivos: <strong class="text-cyan-400 font-mono text-sm" id="chimpTargetCount">4</strong>
+                    </span>
+                    <button onclick="restartChimpGame()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 text-xs font-bold transition">
+                        Siguiente Nivel
+                    </button>
+                </div>
+            </div>
+
+            <!-- VISTA 1: Memorama de Parejas -->
+            <div id="view-pairs" class="w-full flex flex-col items-center justify-center min-h-[420px]">
+                <div id="cardsGrid" class="grid gap-2.5 sm:gap-3.5 p-3 w-full max-w-2xl mx-auto select-none">
+                    <!-- Las cartas se inyectan dinámicamente -->
+                </div>
+            </div>
+
+            <!-- VISTA 2: Desafío de Secuencia (Simon Matrix) -->
+            <div id="view-sequence" class="hidden w-full flex flex-col items-center justify-center max-w-md mx-auto py-4">
+                <div class="text-center mb-4">
+                    <p id="sequencePrompt" class="text-sm font-semibold text-slate-300">
+                        Observa el orden en que destellan los paneles y repítelo.
+                    </p>
+                </div>
+                <div id="sequenceGrid" class="grid grid-cols-3 gap-3 w-72 h-72 sm:w-80 sm:h-80 p-3 bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl">
+                    <!-- 9 botones de secuencia -->
+                </div>
+            </div>
+
+            <!-- VISTA 3: Test de Memoria de Chimpancé (Números Ocultos) -->
+            <div id="view-chimp" class="hidden w-full flex flex-col items-center justify-center max-w-lg mx-auto py-2">
+                <div class="text-center mb-4 px-4">
+                    <h3 class="text-base font-bold text-white mb-1">Test Cognitivo Instantáneo</h3>
+                    <p id="chimpInstructions" class="text-xs text-slate-400">
+                        Memoriza las posiciones numéricas y pulsa en orden creciente (1, 2, 3...). Al tocar el 1, todos los números se ocultarán.
+                    </p>
+                </div>
+                <div id="chimpGrid" class="grid grid-cols-5 gap-2 sm:gap-2.5 w-full max-w-md aspect-square p-3 bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl">
+                    <!-- Celdas de 5x5 inyectadas dinámicamente -->
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Footer con Consejo Mental -->
+        <footer class="pt-4 pb-2 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+            <div class="flex items-center gap-2">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span id="brainTip">💡 Tip: La memoria de trabajo retiene en promedio 7 elementos simultáneos.</span>
+            </div>
+            <div>
+                MemoMaster &bull; Ejercita tu plasticidad neuronal
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- MODAL DE VICTORIA / FIN DE PARTIDA -->
+    <div id="gameModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 text-center shadow-2xl transform transition-all scale-95 opacity-0 duration-300" id="modalCard">
+            <div id="modalIcon" class="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-4xl shadow-lg shadow-emerald-500/30 mb-4 animate-bounce">
+                🏆
+            </div>
+            <h2 id="modalTitle" class="text-2xl font-black text-white mb-1">¡Excelente Memoria!</h2>
+            <p id="modalSubtitle" class="text-sm text-slate-400 mb-6">Has completado el ejercicio exitosamente.</p>
+
+            <!-- Rejilla de Métricas Finales -->
+            <div class="grid grid-cols-3 gap-2 bg-slate-950/80 border border-slate-800/80 rounded-2xl p-4 mb-6 text-left">
+                <div>
+                    <span class="text-[10px] text-slate-500 font-bold uppercase block">Tiempo</span>
+                    <span id="modalTime" class="text-lg font-mono font-bold text-emerald-400">00:45</span>
+                </div>
+                <div>
+                    <span id="modalStatLabel" class="text-[10px] text-slate-500 font-bold uppercase block">Intentos</span>
+                    <span id="modalMoves" class="text-lg font-mono font-bold text-cyan-400">18</span>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-500 font-bold uppercase block">Puntos</span>
+                    <span id="modalScore" class="text-lg font-mono font-bold text-amber-400">850</span>
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="flex gap-3">
+                <button onclick="closeModal()" class="flex-1 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm transition">
+                    Cerrar
+                </button>
+                <button onclick="modalPlayAgain()" class="flex-1 py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm transition shadow-lg shadow-emerald-500/20">
+                    Jugar de Nuevo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE ESTADÍSTICAS GLOBALES -->
+    <div id="statsModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-xl">📊</span>
+                    <h3 class="text-lg font-bold text-white">Tus Récords y Logros</h3>
+                </div>
+                <button onclick="closeStatsModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+            </div>
+
+            <div class="space-y-3 mb-6">
+                <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-xl">🃏</div>
+                        <div>
+                            <div class="text-xs font-bold text-white">Mejor Tiempo (Parejas Medio)</div>
+                            <div class="text-[11px] text-slate-400">Tiempo mínimo récord</div>
+                        </div>
+                    </div>
+                    <span id="bestTimePairs" class="font-mono font-bold text-emerald-400 text-sm">--:--</span>
+                </div>
+
+                <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 text-xl">⚡</div>
+                        <div>
+                            <div class="text-xs font-bold text-white">Récord Secuencia</div>
+                            <div class="text-[11px] text-slate-400">Longitud de secuencia superada</div>
+                        </div>
+                    </div>
+                    <span id="bestSequence" class="font-mono font-bold text-cyan-400 text-sm">0 Pasos</span>
+                </div>
+
+                <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-xl">🐵</div>
+                        <div>
+                            <div class="text-xs font-bold text-white">Nivel Chimpancé</div>
+                            <div class="text-[11px] text-slate-400">Máxima cantidad de números</div>
+                        </div>
+                    </div>
+                    <span id="bestChimp" class="font-mono font-bold text-amber-400 text-sm">Nivel 4</span>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="resetStats()" class="px-4 py-2.5 rounded-xl border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-xs font-bold transition">
+                    Reiniciar Récords
+                </button>
+                <button onclick="closeStatsModal()" class="flex-1 py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition">
+                    Aceptar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ========================================================
+           SISTEMA DE AUDIO INTEGRADO CON WEB AUDIO API
+           No depende de librerías externas o URLs rotas
+           ======================================================== */
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) {
+                    audioCtx = new AudioContextClass();
+                }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function toggleAudio() {
+            soundEnabled = !soundEnabled;
+            const soundIcon = document.getElementById('soundIcon');
+            const soundBtn = document.getElementById('soundToggleBtn');
+            if (soundEnabled) {
+                soundIcon.textContent = '🔊';
+                soundBtn.classList.remove('opacity-50');
+                playTone(523.25, 'triangle', 0.1, 0); // Beep de confirmación (C5)
+            } else {
+                soundIcon.textContent = '🔇';
+                soundBtn.classList.add('opacity-50');
+            }
+        }
+
+        function playTone(freq, type = 'sine', duration = 0.15, startTimeOffset = 0, gainValue = 0.15) {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                if (!audioCtx) return;
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + startTimeOffset);
+
+                gain.gain.setValueAtTime(gainValue, audioCtx.currentTime + startTimeOffset);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + startTimeOffset + duration);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(audioCtx.currentTime + startTimeOffset);
+                osc.stop(audioCtx.currentTime + startTimeOffset + duration);
+            } catch (e) {
+                console.error("Audio error", e);
+            }
+        }
+
+        function playFlipSound() {
+            playTone(480, 'sine', 0.08, 0, 0.08);
+        }
+
+        function playMatchSound() {
+            // Acorde alegre de éxito
+            playTone(523.25, 'triangle', 0.2, 0, 0.15); // C5
+            playTone(659.25, 'triangle', 0.2, 0.08, 0.15); // E5
+            playTone(783.99, 'triangle', 0.35, 0.16, 0.2); // G5
+        }
+
+        function playMismatchSound() {
+            playTone(280, 'sawtooth', 0.15, 0, 0.08);
+            playTone(220, 'sawtooth', 0.25, 0.12, 0.08);
+        }
+
+        function playVictorySound() {
+            const notes = [440, 554.37, 659.25, 880];
+            notes.forEach((f, idx) => {
+                playTone(f, 'triangle', 0.3, idx * 0.12, 0.2);
+            });
+        }
+
+        function playSequenceTone(index) {
+            // 9 notas pentatónicas agradables
+            const freqs = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99];
+            playTone(freqs[index % freqs.length], 'sine', 0.35, 0, 0.2);
+        }
+
+        /* ========================================================
+           BANCO DE TEMAS Y RECURSOS
+           ======================================================== */
+        const THEMES = {
+            emojis: ['🦁', '🦊', '🐼', '🐨', '🐸', '🦉', '🐬', '🐙', '🦄', '🐝', '🐢', '🦋'],
+            tech: ['💻', '⚙️', '🚀', '⚡', '🤖', '🔋', '🛰️', '💾', '🛡️', '🕹️', '📱', '📡'],
+            space: ['🪐', '🌟', '☄️', '🌌', '🛸', '👨‍🚀', '🌙', '🔭', '☀️', '🌑', '✨', '🌍'],
+            food: ['🍕', '🍔', '🥑', '🍣', '🍓', '🍩', '🌮', '🍦', '🍜', '🥞', '🍇', '🍉']
+        };
+
+        const BRAIN_TIPS = [
+            "💡 La práctica distribuida de 10 min diarios refuerza la memoria a largo plazo.",
+            "💡 El ejercicio aeróbico regular incrementa el tamaño del hipocampo.",
+            "💡 Relacionar elementos con historias absurdas (mnemotecnia) triplica la retención.",
+            "💡 Dormir bien fija los rastros de memoria aprendidos durante el día.",
+            "💡 El estrés elevado libera cortisol, reduciendo la memoria de trabajo temporalmente."
+        ];
+
+        /* ========================================================
+           ESTADO GLOBAL DEL JUEGO
+           ======================================================== */
+        let currentMode = 'pairs'; // 'pairs' | 'sequence' | 'chimp'
+        let timerInterval = null;
+        let secondsElapsed = 0;
+
+        // Modo Parejas
+        let pairsDifficulty = 'medium'; // 'easy' (6 pairs), 'medium' (8 pairs), 'hard' (10 pairs)
+        let pairsTheme = 'emojis';
+        let pairsDeck = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let totalPairs = 8;
+        let pairsMoves = 0;
+        let pairsScore = 0;
+        let pairsHints = 2;
+        let isBoardLocked = false;
+
+        // Modo Secuencia
+        let sequencePattern = [];
+        let playerStep = 0;
+        let sequencePlaying = false;
+        let sequenceLevel = 1;
+        let sequenceScore = 0;
+
+        // Modo Chimpancé
+        let chimpLevel = 4; // cantidad de números
+        let chimpExpected = 1;
+        let chimpStarted = false;
+        let chimpActive = false;
+
+        /* ========================================================
+           ESTADÍSTICAS PERSISTENTES (LocalStorage)
+           ======================================================== */
+        function loadStats() {
+            try {
+                const bestPairs = localStorage.getItem('memo_best_pairs_time');
+                const bestSeq = localStorage.getItem('memo_best_sequence');
+                const bestCh = localStorage.getItem('memo_best_chimp');
+
+                if (bestPairs) document.getElementById('bestTimePairs').textContent = formatTime(parseInt(bestPairs));
+                if (bestSeq) document.getElementById('bestSequence').textContent = `${bestSeq} Pasos`;
+                if (bestCh) document.getElementById('bestChimp').textContent = `Nivel ${bestCh}`;
+            } catch (e) {
+                console.warn("Storage no disponible", e);
+            }
+        }
+
+        function saveStat(key, value) {
+            try {
+                localStorage.setItem(key, value);
+                loadStats();
+            } catch (e) {}
+        }
+
+        function resetStats() {
+            localStorage.removeItem('memo_best_pairs_time');
+            localStorage.removeItem('memo_best_sequence');
+            localStorage.removeItem('memo_best_chimp');
+            document.getElementById('bestTimePairs').textContent = '--:--';
+            document.getElementById('bestSequence').textContent = '0 Pasos';
+            document.getElementById('bestChimp').textContent = 'Nivel 4';
+        }
+
+        /* ========================================================
+           TEMPORIZADOR Y UTILIDADES
+           ======================================================== */
+        function startTimer() {
+            stopTimer();
+            secondsElapsed = 0;
+            updateTimerDisplay();
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                updateTimerDisplay();
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function formatTime(totalSeconds) {
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function updateTimerDisplay() {
+            document.getElementById('timerDisplay').textContent = formatTime(secondsElapsed);
+        }
+
+        function shuffleArray(arr) {
+            const copy = [...arr];
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        /* ========================================================
+           LÓGICA: MODO PAREJAS (MEMORAMA CLÁSICO)
+           ======================================================== */
+        function initPairsGame() {
+            stopTimer();
+            isBoardLocked = false;
+            flippedCards = [];
+            matchedPairs = 0;
+            pairsMoves = 0;
+            pairsScore = 0;
+            pairsHints = 2;
+            document.getElementById('hintCount').textContent = pairsHints;
+
+            let pairCount = 8;
+            let gridColsClass = 'grid-cols-4';
+
+            if (pairsDifficulty === 'easy') {
+                pairCount = 6;
+                gridColsClass = 'grid-cols-3 sm:grid-cols-4 max-w-lg';
+            } else if (pairsDifficulty === 'medium') {
+                pairCount = 8;
+                gridColsClass = 'grid-cols-4 max-w-xl';
+            } else if (pairsDifficulty === 'hard') {
+                pairCount = 10;
+                gridColsClass = 'grid-cols-4 sm:grid-cols-5 max-w-2xl';
+            }
+
+            totalPairs = pairCount;
+
+            // Elegir símbolos del tema
+            const themeSymbols = THEMES[pairsTheme] || THEMES.emojis;
+            const selectedSymbols = shuffleArray(themeSymbols).slice(0, pairCount);
+            const fullDeck = [...selectedSymbols, ...selectedSymbols];
+            pairsDeck = shuffleArray(fullDeck);
+
+            // Actualizar HUD
+            document.getElementById('stat1Label').textContent = "Movimientos";
+            document.getElementById('stat1Value').textContent = "0";
+            document.getElementById('stat2Label').textContent = "Puntos";
+            document.getElementById('stat2Value').textContent = "0";
+
+            // Renderizar cartas
+            const grid = document.getElementById('cardsGrid');
+            grid.className = `grid gap-2.5 sm:gap-3.5 p-3 w-full mx-auto select-none ${gridColsClass}`;
+            grid.innerHTML = '';
+
+            pairsDeck.forEach((symbol, index) => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'perspective-1000 aspect-square cursor-pointer select-none';
+                cardEl.setAttribute('data-index', index);
+                cardEl.setAttribute('data-symbol', symbol);
+
+                cardEl.innerHTML = `
+                    <div class="card-inner relative w-full h-full transform-style-3d rounded-2xl shadow-lg border border-slate-800/90 transition-transform">
+                        <!-- Frente de la carta (Oculta al inicio) -->
+                        <div class="card-front absolute inset-0 backface-hidden bg-slate-900/95 border border-slate-800 rounded-2xl flex items-center justify-center text-slate-500 font-mono text-xl sm:text-2xl hover:border-emerald-500/50 hover:bg-slate-800/80 transition-all">
+                            <span class="opacity-40">✦</span>
+                        </div>
+                        <!-- Reverso de la carta (Revela el emoji) -->
+                        <div class="card-back absolute inset-0 backface-hidden rotate-y-180 bg-gradient-to-tr from-slate-900 to-slate-800 border-2 border-emerald-500/70 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl shadow-inner">
+                            <span>${symbol}</span>
+                        </div>
+                    </div>
+                `;
+
+                cardEl.addEventListener('click', () => onCardClicked(cardEl, index));
+                grid.appendChild(cardEl);
+            });
+
+            startTimer();
+        }
+
+        function onCardClicked(cardEl, index) {
+            initAudio();
+            if (isBoardLocked) return;
+            if (flippedCards.some(c => c.index === index)) return;
+            if (cardEl.classList.contains('matched')) return;
+
+            // Girar carta
+            flipCardElement(cardEl, true);
+            playFlipSound();
+            flippedCards.push({ el: cardEl, index: index, symbol: cardEl.getAttribute('data-symbol') });
+
+            if (flippedCards.length === 2) {
+                pairsMoves++;
+                document.getElementById('stat1Value').textContent = pairsMoves;
+                isBoardLocked = true;
+
+                const [card1, card2] = flippedCards;
+
+                if (card1.symbol === card2.symbol) {
+                    // ¡Acierto!
+                    setTimeout(() => {
+                        playMatchSound();
+                        card1.el.classList.add('matched');
+                        card2.el.classList.add('matched');
+                        
+                        // Añadir efecto de brillo al acertar
+                        const inner1 = card1.el.querySelector('.card-back');
+                        const inner2 = card2.el.querySelector('.card-back');
+                        inner1.classList.add('!border-emerald-400', '!bg-emerald-950/40');
+                        inner2.classList.add('!border-emerald-400', '!bg-emerald-950/40');
+
+                        matchedPairs++;
+                        pairsScore += Math.max(100 - (pairsMoves * 2), 20);
+                        document.getElementById('stat2Value').textContent = pairsScore;
+
+                        flippedCards = [];
+                        isBoardLocked = false;
+
+                        if (matchedPairs === totalPairs) {
+                            handlePairsVictory();
+                        }
+                    }, 400);
+                } else {
+                    // Fallo
+                    setTimeout(() => {
+                        playMismatchSound();
+                        flipCardElement(card1.el, false);
+                        flipCardElement(card2.el, false);
+                        flippedCards = [];
+                        isBoardLocked = false;
+                    }, 900);
+                }
+            }
+        }
+
+        function flipCardElement(cardEl, showBack) {
+            const inner = cardEl.querySelector('.card-inner');
+            if (showBack) {
+                inner.classList.add('rotate-y-180');
+            } else {
+                inner.classList.remove('rotate-y-180');
+            }
+        }
+
+        function usePeekHint() {
+            if (pairsHints <= 0 || isBoardLocked) return;
+            pairsHints--;
+            document.getElementById('hintCount').textContent = pairsHints;
+            initAudio();
+            playTone(880, 'sine', 0.2);
+
+            const allCards = document.querySelectorAll('#cardsGrid .perspective-1000:not(.matched)');
+            allCards.forEach(c => flipCardElement(c, true));
+            isBoardLocked = true;
+
+            setTimeout(() => {
+                allCards.forEach(c => {
+                    const isFlippedNow = flippedCards.some(fc => fc.el === c);
+                    if (!isFlippedNow) {
+                        flipCardElement(c, false);
+                    }
+                });
+                isBoardLocked = false;
+            }, 1200);
+        }
+
+        function handlePairsVictory() {
+            stopTimer();
+            playVictorySound();
+            fireConfetti();
+
+            // Guardar récord si es medio
+            if (pairsDifficulty === 'medium') {
+                const best = localStorage.getItem('memo_best_pairs_time');
+                if (!best || secondsElapsed < parseInt(best)) {
+                    saveStat('memo_best_pairs_time', secondsElapsed);
+                }
+            }
+
+            openModal({
+                title: "¡Memoria Prodigiosa!",
+                subtitle: `Completaste las ${totalPairs} parejas en excelente tiempo.`,
+                time: formatTime(secondsElapsed),
+                statLabel: "Movimientos",
+                statValue: pairsMoves,
+                score: pairsScore,
+                icon: "🏆"
+            });
+        }
+
+        function changeTheme(newTheme) {
+            pairsTheme = newTheme;
+            initPairsGame();
+        }
+
+        function changeDifficulty(newDiff) {
+            pairsDifficulty = newDiff;
+            initPairsGame();
+        }
+
+        function restartCurrentGame() {
+            if (currentMode === 'pairs') initPairsGame();
+            else if (currentMode === 'sequence') restartSequenceGame();
+            else if (currentMode === 'chimp') restartChimpGame();
+        }
+
+        /* ========================================================
+           LÓGICA: MODO SECUENCIA (SIMON MATRIX)
+           ======================================================== */
+        function initSequenceGame() {
+            stopTimer();
+            sequencePattern = [];
+            playerStep = 0;
+            sequenceLevel = 1;
+            sequenceScore = 0;
+            sequencePlaying = false;
+
+            document.getElementById('stat1Label').textContent = "Secuencia";
+            document.getElementById('stat1Value').textContent = "Nivel 1";
+            document.getElementById('stat2Label').textContent = "Puntos";
+            document.getElementById('stat2Value').textContent = "0";
+            document.getElementById('seqLevel').textContent = sequenceLevel;
+            document.getElementById('sequencePrompt').textContent = "Pulsa 'Comenzar' para iniciar el entrenamiento.";
+
+            const grid = document.getElementById('sequenceGrid');
+            grid.innerHTML = '';
+
+            const colors = [
+                'from-emerald-500 to-teal-600',
+                'from-cyan-500 to-blue-600',
+                'from-indigo-500 to-purple-600',
+                'from-rose-500 to-pink-600',
+                'from-amber-400 to-orange-500',
+                'from-lime-400 to-emerald-600',
+                'from-fuchsia-500 to-pink-500',
+                'from-sky-400 to-cyan-600',
+                'from-violet-500 to-indigo-700'
+            ];
+
+            for (let i = 0; i < 9; i++) {
+                const btn = document.createElement('button');
+                btn.className = `seq-cell relative rounded-2xl bg-slate-800 border-2 border-slate-700/80 transition-all duration-150 transform active:scale-95 flex items-center justify-center overflow-hidden hover:border-slate-500`;
+                btn.setAttribute('data-id', i);
+
+                btn.innerHTML = `
+                    <div class="glow-layer absolute inset-0 bg-gradient-to-tr ${colors[i]} opacity-0 transition-opacity duration-200 pointer-events-none"></div>
+                    <span class="text-xs font-mono font-bold text-slate-500 pointer-events-none select-none">${i + 1}</span>
+                `;
+
+                btn.addEventListener('click', () => onSequenceCellClick(i));
+                grid.appendChild(btn);
+            }
+        }
+
+        function restartSequenceGame() {
+            initAudio();
+            initSequenceGame();
+            startTimer();
+            nextSequenceRound();
+        }
+
+        function nextSequenceRound() {
+            sequencePlaying = false;
+            playerStep = 0;
+            document.getElementById('seqLevel').textContent = sequenceLevel;
+            document.getElementById('stat1Value').textContent = `Largo: ${sequenceLevel}`;
+            document.getElementById('sequencePrompt').textContent = "Memoriza la secuencia lumínica...";
+
+            // Agregar un nuevo paso aleatorio (0 a 8)
+            sequencePattern.push(Math.floor(Math.random() * 9));
+
+            // Reproducir patrón tras una breve pausa
+            setTimeout(() => {
+                playFullSequence();
+            }, 600);
+        }
+
+        function playFullSequence() {
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i >= sequencePattern.length) {
+                    clearInterval(interval);
+                    sequencePlaying = true;
+                    document.getElementById('sequencePrompt').textContent = "¡Tu turno! Repite los paneles en orden.";
+                    return;
+                }
+                flashSequenceCell(sequencePattern[i]);
+                i++;
+            }, 600);
+        }
+
+        function flashSequenceCell(cellIndex) {
+            const cells = document.querySelectorAll('.seq-cell');
+            const target = cells[cellIndex];
+            if (!target) return;
+
+            playSequenceTone(cellIndex);
+            const glow = target.querySelector('.glow-layer');
+            glow.classList.remove('opacity-0');
+            glow.classList.add('opacity-100');
+            target.classList.add('scale-105', 'border-white');
+
+            setTimeout(() => {
+                glow.classList.remove('opacity-100');
+                glow.classList.add('opacity-0');
+                target.classList.remove('scale-105', 'border-white');
+            }, 350);
+        }
+
+        function onSequenceCellClick(cellIndex) {
+            if (!sequencePlaying) return;
+            initAudio();
+
+            flashSequenceCell(cellIndex);
+
+            if (cellIndex === sequencePattern[playerStep]) {
+                // Correcto
+                playerStep++;
+                if (playerStep === sequencePattern.length) {
+                    // Completó la ronda actual
+                    sequencePlaying = false;
+                    sequenceScore += sequenceLevel * 50;
+                    document.getElementById('stat2Value').textContent = sequenceScore;
+
+                    // Actualizar récord
+                    const currentBest = parseInt(localStorage.getItem('memo_best_sequence') || '0');
+                    if (sequenceLevel > currentBest) {
+                        saveStat('memo_best_sequence', sequenceLevel);
+                    }
+
+                    sequenceLevel++;
+                    document.getElementById('sequencePrompt').textContent = "¡Correcto! Preparando siguiente nivel...";
+
+                    setTimeout(() => {
+                        nextSequenceRound();
+                    }, 800);
+                }
+            } else {
+                // Error
+                sequencePlaying = false;
+                stopTimer();
+                playMismatchSound();
+                document.getElementById('sequencePrompt').textContent = "¡Secuencia incorrecta!";
+
+                openModal({
+                    title: "Fin de Secuencia",
+                    subtitle: `Alcanzaste el Nivel ${sequenceLevel} con éxito.`,
+                    time: formatTime(secondsElapsed),
+                    statLabel: "Pasos Logrados",
+                    statValue: sequenceLevel - 1,
+                    score: sequenceScore,
+                    icon: "⚡"
+                });
+            }
+        }
+
+        /* ========================================================
+           LÓGICA: TEST DE MEMORIA DE CHIMPANCÉ
+           (Test de memoria de trabajo de Ayumu)
+           ======================================================== */
+        function initChimpGame() {
+            stopTimer();
+            chimpExpected = 1;
+            chimpStarted = false;
+            chimpActive = false;
+
+            document.getElementById('stat1Label').textContent = "Objetivos";
+            document.getElementById('stat1Value').textContent = `${chimpLevel}`;
+            document.getElementById('stat2Label').textContent = "Nivel";
+            document.getElementById('stat2Value').textContent = `${chimpLevel}`;
+            document.getElementById('chimpTargetCount').textContent = chimpLevel;
+            document.getElementById('chimpInstructions').textContent = 
+                `Memoriza las ubicaciones de los números del 1 al ${chimpLevel}. Al pulsar '1', todos se cubrirán.`;
+
+            const grid = document.getElementById('chimpGrid');
+            grid.innerHTML = '';
+
+            // Grid de 5x5 (25 casillas)
+            const totalCells = 25;
+            const positions = shuffleArray([...Array(totalCells).keys()]).slice(0, chimpLevel);
+
+            // Mapa de posición -> número asignado (1 al chimpLevel)
+            const numberMap = {};
+            positions.forEach((pos, idx) => {
+                numberMap[pos] = idx + 1;
+            });
+
+            for (let i = 0; i < totalCells; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'w-full h-full rounded-2xl flex items-center justify-center text-lg sm:text-2xl font-black font-mono transition-all duration-200 select-none';
+
+                if (numberMap[i] !== undefined) {
+                    const numberVal = numberMap[i];
+                    cell.setAttribute('data-num', numberVal);
+                    cell.className += ' bg-slate-800 border-2 border-emerald-500/50 text-white cursor-pointer hover:border-emerald-400 active:scale-95 shadow-md shadow-emerald-500/10 chimp-active-cell';
+                    cell.innerHTML = `<span>${numberVal}</span>`;
+                    cell.addEventListener('click', () => onChimpCellClick(cell, numberVal));
+                } else {
+                    cell.className += ' bg-slate-900/40 border border-slate-800/40 opacity-40';
+                }
+
+                grid.appendChild(cell);
+            }
+        }
+
+        function restartChimpGame() {
+            initAudio();
+            initChimpGame();
+            startTimer();
+            chimpActive = true;
+        }
+
+        function onChimpCellClick(cell, numberVal) {
+            if (!chimpActive) return;
+            initAudio();
+
+            if (numberVal === chimpExpected) {
+                // Al tocar el 1, se ocultan todos los números restantes
+                if (chimpExpected === 1) {
+                    chimpStarted = true;
+                    hideAllChimpNumbers();
+                }
+
+                playTone(400 + (numberVal * 50), 'triangle', 0.12);
+                cell.classList.remove('bg-slate-800', 'border-emerald-500/50', 'text-white');
+                cell.classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400', 'opacity-30', 'pointer-events-none');
+                cell.innerHTML = `<span>✓</span>`;
+
+                chimpExpected++;
+
+                // ¿Completó todos los números?
+                if (chimpExpected > chimpLevel) {
+                    chimpActive = false;
+                    stopTimer();
+                    playVictorySound();
+                    fireConfetti();
+
+                    // Guardar récord
+                    const currentBest = parseInt(localStorage.getItem('memo_best_chimp') || '4');
+                    if (chimpLevel >= currentBest) {
+                        saveStat('memo_best_chimp', chimpLevel);
+                    }
+
+                    openModal({
+                        title: "¡Nivel Superado!",
+                        subtitle: `Completaste satisfactoriamente ${chimpLevel} posiciones retenidas.`,
+                        time: formatTime(secondsElapsed),
+                        statLabel: "Memoria Retenida",
+                        statValue: `${chimpLevel} Cifras`,
+                        score: chimpLevel * 100,
+                        icon: "🐵"
+                    });
+
+                    // Aumentar dificultad para la siguiente
+                    if (chimpLevel < 15) {
+                        chimpLevel++;
+                    }
+                }
+            } else {
+                // Falló el orden
+                chimpActive = false;
+                stopTimer();
+                playMismatchSound();
+                revealAllChimpNumbers(true);
+
+                openModal({
+                    title: "Orden Incorrecto",
+                    subtitle: `Debías seleccionar el número ${chimpExpected}. ¡Sigue entrenando!`,
+                    time: formatTime(secondsElapsed),
+                    statLabel: "Falló en",
+                    statValue: `#${chimpExpected}`,
+                    score: Math.max((chimpExpected - 1) * 80, 0),
+                    icon: "❌"
+                });
+            }
+        }
+
+        function hideAllChimpNumbers() {
+            const activeCells = document.querySelectorAll('.chimp-active-cell');
+            activeCells.forEach(cell => {
+                const val = cell.getAttribute('data-num');
+                if (val !== '1') {
+                    cell.innerHTML = `<span class="opacity-0">?</span>`;
+                    cell.classList.add('bg-slate-800', 'border-slate-700');
+                }
+            });
+        }
+
+        function revealAllChimpNumbers(hasFailed = false) {
+            const activeCells = document.querySelectorAll('.chimp-active-cell');
+            activeCells.forEach(cell => {
+                const val = cell.getAttribute('data-num');
+                cell.innerHTML = `<span>${val}</span>`;
+                if (hasFailed) {
+                    cell.classList.add('border-rose-500/80', 'text-rose-400');
+                }
+            });
+        }
+
+        /* ========================================================
+           EFECTOS VISUALES: CONFETI CANVAS PROCEDURAL
+           ======================================================== */
+        let confettiParticles = [];
+        let confettiAnimationId = null;
+
+        function fireConfetti() {
+            const canvas = document.getElementById('confettiCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const colors = ['#10b981', '#06b6d4', '#f59e0b', '#ec4899', '#8b5cf6', '#3b82f6'];
+            confettiParticles = [];
+
+            for (let i = 0; i < 90; i++) {
+                confettiParticles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2 + 50,
+                    w: Math.random() * 8 + 4,
+                    h: Math.random() * 8 + 4,
+                    vx: (Math.random() - 0.5) * 16,
+                    vy: (Math.random() - 0.7) * 16,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    rot: Math.random() * 360,
+                    vRot: (Math.random() - 0.5) * 10,
+                    gravity: 0.25,
+                    life: 1
+                });
+            }
+
+            if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
+            renderConfetti(ctx, canvas);
+        }
+
+        function renderConfetti(ctx, canvas) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let active = false;
+
+            confettiParticles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += p.gravity;
+                p.rot += p.vRot;
+                p.life -= 0.012;
+
+                if (p.life > 0) {
+                    active = true;
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate((p.rot * Math.PI) / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.globalAlpha = Math.max(p.life, 0);
+                    ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                    ctx.restore();
+                }
+            });
+
+            if (active) {
+                confettiAnimationId = requestAnimationFrame(() => renderConfetti(ctx, canvas));
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        /* ========================================================
+           CONTROL DE MODALES Y MODOS
+           ======================================================== */
+        function openModal({ title, subtitle, time, statLabel, statValue, score, icon }) {
+            const modal = document.getElementById('gameModal');
+            const card = document.getElementById('modalCard');
+
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalSubtitle').textContent = subtitle;
+            document.getElementById('modalTime').textContent = time;
+            document.getElementById('modalStatLabel').textContent = statLabel;
+            document.getElementById('modalMoves').textContent = statValue;
+            document.getElementById('modalScore').textContent = score;
+            document.getElementById('modalIcon').textContent = icon || '🎉';
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                card.classList.remove('scale-95', 'opacity-0');
+                card.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('gameModal');
+            const card = document.getElementById('modalCard');
+            card.classList.remove('scale-100', 'opacity-100');
+            card.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 250);
+        }
+
+        function modalPlayAgain() {
+            closeModal();
+            restartCurrentGame();
+        }
+
+        function openStatsModal() {
+            loadStats();
+            document.getElementById('statsModal').classList.remove('hidden');
+            document.getElementById('statsModal').classList.add('flex');
+        }
+
+        function closeStatsModal() {
+            document.getElementById('statsModal').classList.add('hidden');
+            document.getElementById('statsModal').classList.remove('flex');
+        }
+
+        function switchGameMode(mode) {
+            currentMode = mode;
+            stopTimer();
+
+            // Actualizar pestañas activas
+            document.querySelectorAll('.mode-tab').forEach(tab => {
+                tab.className = "mode-tab px-3.5 py-2 rounded-xl transition-all duration-200 text-slate-400 hover:text-white";
+            });
+
+            const activeTab = document.getElementById(`tab-${mode}`);
+            activeTab.className = "mode-tab px-3.5 py-2 rounded-xl transition-all duration-200 bg-emerald-500 text-slate-950 font-bold shadow-md";
+
+            // Ocultar vistas y controles
+            document.getElementById('view-pairs').classList.add('hidden');
+            document.getElementById('view-sequence').classList.add('hidden');
+            document.getElementById('view-chimp').classList.add('hidden');
+            document.getElementById('pairsControls').classList.add('hidden');
+            document.getElementById('sequenceControls').classList.add('hidden');
+            document.getElementById('chimpControls').classList.add('hidden');
+
+            if (mode === 'pairs') {
+                document.getElementById('view-pairs').classList.remove('hidden');
+                document.getElementById('pairsControls').classList.remove('hidden');
+                initPairsGame();
+            } else if (mode === 'sequence') {
+                document.getElementById('view-sequence').classList.remove('hidden');
+                document.getElementById('sequenceControls').classList.remove('hidden');
+                initSequenceGame();
+            } else if (mode === 'chimp') {
+                document.getElementById('view-chimp').classList.remove('hidden');
+                document.getElementById('chimpControls').classList.remove('hidden');
+                initChimpGame();
+            }
+
+            // Cambiar tip del pie
+            const randomTip = BRAIN_TIPS[Math.floor(Math.random() * BRAIN_TIPS.length)];
+            document.getElementById('brainTip').textContent = randomTip;
+        }
+
+        // Inicio automático al cargar
+        window.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            switchGameMode('pairs');
+
+            // Redimensionar canvas de confeti
+            window.addEventListener('resize', () => {
+                const canvas = document.getElementById('confettiCanvas');
+                if (canvas) {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
