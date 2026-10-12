@@ -1582,6 +1582,17 @@
         icon: "🦑",
         tags: ["Detección", "Reflejos", "Simulación"],
         demoPrompt: "Luz Roja, Luz Verde: Sensor de movimiento activado. Detección de cambios de posición con margen cero de error."
+      },
+      {
+        id: "proj-10",
+        title: "Sopa de Letras",
+        category: "juegos",
+        categoryLabel: "Juegos & Simulación",
+        desc: "Divertido juego clásico de Sopa de Letras interactivo.",
+        icon: "🔠",
+        tags: ["Sopa de Letras", "Juego Clásico", "Educación"],
+        demoPrompt: "Generando grilla de sopa de letras...",
+        link: "sopadeletras/index.html"
       }
     ];
 
@@ -1680,10 +1691,17 @@
             <div class="project-tags">${tagsHtml}</div>
           </div>
           <div class="project-footer">
+            ${proj.link ? `
+            <a href="${proj.link}" class="btn btn-outline btn-sm" style="text-decoration: none;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Jugar
+            </a>
+            ` : `
             <button class="btn btn-outline btn-sm demo-btn" data-id="${proj.id}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               Probar Demo
             </button>
+            `}
             <a href="${getWhatsAppUrl(`Hola Yeiko, me interesa conocer más sobre tu proyecto "${proj.title}".`)}" target="_blank" class="btn btn-glow btn-sm" style="padding: 0.42rem 0.85rem; font-size: 0.8rem;">
               Consultar
             </a>
