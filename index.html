@@ -790,7 +790,6 @@
       color: var(--text-primary);
     }
 
-    /* Virtual Assistant Floating Bot */
     .ai-assistant-widget {
       position: fixed;
       bottom: 24px;
@@ -935,7 +934,6 @@
       border-color: var(--accent-cyan);
     }
 
-    /* WhatsApp Floating Button */
     .whatsapp-widget {
       position: fixed;
       bottom: 24px;
@@ -1494,6 +1492,17 @@
     // Catálogo inicial con la estructura de proyectos y juegos adaptada a Yeiko Tintaya
     const DEFAULT_PROJECTS = [
       {
+        id: "proj-trivia",
+        title: "Trivia Cambridge",
+        category: "educacion",
+        categoryLabel: "Educación & Cambridge",
+        desc: "Aplicación interactiva de preguntas, trivia y retos educativos desarrollada por Yeiko Tintaya y alojada en GitHub Pages.",
+        icon: "🎯",
+        tags: ["Trivia", "Cambridge", "Web App", "GitHub Pages"],
+        url: "https://alumnochatbot.github.io/yeiko-tintaya/trivia",
+        demoPrompt: "App de Trivia conectada a https://alumnochatbot.github.io/yeiko-tintaya/trivia. Desafíos de preguntas interactivas con puntuación y retroalimentación inmediata."
+      },
+      {
         id: "proj-1",
         title: "Minecraft AI World",
         category: "juegos",
@@ -1590,7 +1599,14 @@
         const stored = localStorage.getItem(CONFIG.storageKey);
         if (stored) {
           const parsed = JSON.parse(stored);
-          return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_PROJECTS;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // Asegurar que la nueva Trivia esté integrada automáticamente al catálogo existente
+            if (!parsed.some(p => p.id === "proj-trivia" || (p.url && p.url.includes("trivia")))) {
+              parsed.unshift(DEFAULT_PROJECTS[0]);
+              saveProjects(parsed);
+            }
+            return parsed;
+          }
         }
       } catch (err) {
         console.error("Error al leer proyectos de localStorage:", err);
@@ -1684,9 +1700,15 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               Probar Demo
             </button>
-            <a href="${getWhatsAppUrl(`Hola Yeiko, me interesa conocer más sobre tu proyecto "${proj.title}".`)}" target="_blank" class="btn btn-glow btn-sm" style="padding: 0.42rem 0.85rem; font-size: 0.8rem;">
-              Consultar
-            </a>
+            ${proj.url ? `
+              <a href="${proj.url}" target="_blank" rel="noopener noreferrer" class="btn btn-glow btn-sm" style="padding: 0.42rem 0.85rem; font-size: 0.8rem;">
+                Abrir App ↗
+              </a>
+            ` : `
+              <a href="${getWhatsAppUrl(`Hola Yeiko, me interesa conocer más sobre tu proyecto \"${proj.title}\".`)}" target="_blank" class="btn btn-glow btn-sm" style="padding: 0.42rem 0.85rem; font-size: 0.8rem;">
+                Consultar
+              </a>
+            `}
           </div>
         `;
 
@@ -1709,6 +1731,16 @@
       const modal = document.getElementById("demo-modal");
       const content = document.getElementById("demo-modal-content");
 
+      const liveFrame = proj.url ? `
+        <div style="margin-bottom: 1.2rem; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border-glow); background: #000;">
+          <div style="background: var(--bg-card); padding: 0.5rem 0.8rem; font-size: 0.78rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle);">
+            <span style="color: var(--accent-cyan); font-family: var(--font-code);">${proj.url}</span>
+            <a href="${proj.url}" target="_blank" rel="noopener noreferrer" style="color: #93c5fd; text-decoration: underline;">Pantalla completa ↗</a>
+          </div>
+          <iframe src="${proj.url}" style="width: 100%; height: 380px; border: none;" title="${proj.title}" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+        </div>
+      ` : '';
+
       content.innerHTML = `
         <div style="display: flex; align-items: center; gap: 0.9rem; margin-bottom: 1.2rem;">
           <span style="font-size: 2.2rem;">${proj.icon || "💻"}</span>
@@ -1720,9 +1752,11 @@
           </div>
         </div>
         
-        <p style="color: var(--text-secondary); font-size: 0.94rem; margin-bottom: 1.5rem; line-height: 1.6;">
+        <p style="color: var(--text-secondary); font-size: 0.94rem; margin-bottom: 1.2rem; line-height: 1.6;">
           ${proj.desc}
         </p>
+
+        ${liveFrame}
 
         <div style="background: var(--bg-base); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1.2rem; margin-bottom: 1.5rem;">
           <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.6rem; font-family: var(--font-code);">
@@ -1737,9 +1771,12 @@
           <div style="font-size: 0.82rem; color: var(--text-muted);">
             Cambridge College &bull; Santa Cruz de la Sierra
           </div>
-          <a href="${getWhatsAppUrl(`¡Hola Yeiko! Acabo de probar la demo de "${proj.title}" y me pareció genial.`)}" target="_blank" class="btn btn-glow btn-sm">
-            Contactar a Yeiko
-          </a>
+          <div style="display: flex; gap: 0.6rem;">
+            ${proj.url ? `<a href="${proj.url}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">Abrir Web App ↗</a>` : ''}
+            <a href="${getWhatsAppUrl(`¡Hola Yeiko! Acabo de probar la demo de "${proj.title}" y me pareció genial.`)}" target="_blank" class="btn btn-glow btn-sm">
+              Contactar a Yeiko
+            </a>
+          </div>
         </div>
       `;
 
@@ -1873,8 +1910,10 @@
 
           if (q.includes("quién es") || q.includes("yeiko") || q.includes("sobre")) {
             reply = "Yeiko Tintaya es estudiante de la Unidad Educativa Cambridge en Santa Cruz de la Sierra, apasionado por el desarrollo web, la creación de videojuegos y la integración de Inteligencia Artificial.";
+          } else if (q.includes("trivia")) {
+            reply = "¡La app Trivia Cambridge de Yeiko Tintaya ya está disponible! Puedes jugarla directamente en https://alumnochatbot.github.io/yeiko-tintaya/trivia o probar la demo interactiva en la sección de Proyectos.";
           } else if (q.includes("proyecto") || q.includes("juego") || q.includes("minecraft")) {
-            reply = `Yeiko cuenta con ${projectsData.length} proyectos activos en su portafolio, incluyendo Minecraft AI World, Ajedrez 3D, Angry Bird, Blooket Cambridge y Serpiente Neuronal. Puedes probar las demos en la sección de Proyectos.`;
+            reply = `Yeiko cuenta con ${projectsData.length} proyectos activos en su portafolio, incluyendo Trivia Cambridge, Minecraft AI World, Ajedrez 3D, Angry Bird, Blooket Cambridge y Serpiente Neuronal. Puedes probar las demos en la sección de Proyectos.`;
           } else if (q.includes("whatsapp") || q.includes("contacto") || q.includes("escribir")) {
             reply = "Puedes escribirle directamente a su WhatsApp haciendo clic en el botón flotante verde en la esquina inferior derecha o usando el formulario de contacto.";
           } else if (q.includes("cambridge") || q.includes("colegio")) {
