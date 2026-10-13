@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Trivia Quest: Aventura Animal & Cósmica</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Fredoka & Inter for authentic cartoon game feel -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Tone.js for real-time procedural sound effects -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+  
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root {
+      --font-game: 'Fredoka', cursive, sans-serif;
+      --font-body: 'Nunito', sans-serif;
+    }
+
+    body {
+      font-family: var(--font-body);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+    }
+
+    .font-game {
+      font-family: var(--font-game);
+    }
+
+    /* Floating Coins and Clouds Background */
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-14px) rotate(6deg); }
+    }
+
+    @keyframes floatReverse {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(14px) rotate(-6deg); }
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { filter: drop-shadow(0 0 10px rgba(250, 204, 21, 0.6)); }
+      50% { filter: drop-shadow(0 0 25px rgba(250, 204, 21, 0.95)); }
+    }
+
+    @keyframes mascotBounce {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-8px) scale(1.02); }
+    }
+
+    @keyframes mascotCheer {
+      0% { transform: scale(1) translateY(0); }
+      25% { transform: scale(1.15) translateY(-20px) rotate(-5deg); }
+      50% { transform: scale(1.1) translateY(-10px) rotate(5deg); }
+      75% { transform: scale(1.15) translateY(-20px) rotate(-3deg); }
+      100% { transform: scale(1) translateY(0) rotate(0deg); }
+    }
+
+    @keyframes mascotSad {
+      0%, 100% { transform: rotate(0deg); }
+      20% { transform: rotate(-8deg) translateY(4px); }
+      40% { transform: rotate(8deg) translateY(4px); }
+      60% { transform: rotate(-5deg) translateY(4px); }
+      80% { transform: rotate(5deg) translateY(4px); }
+    }
+
+    .anim-float-1 { animation: floatSlow 4.5s ease-in-out infinite; }
+    .anim-float-2 { animation: floatReverse 5.2s ease-in-out infinite; }
+    .anim-pulse-glow { animation: pulseGlow 2.5s infinite; }
+    .anim-mascot-idle { animation: mascotBounce 3s ease-in-out infinite; }
+    .anim-mascot-cheer { animation: mascotCheer 0.9s ease-out; }
+    .anim-mascot-sad { animation: mascotSad 0.8s ease-in-out; }
+
+    /* 3D button press effect */
+    .btn-3d {
+      transition: all 0.12s ease-in-out;
+      box-shadow: 0 6px 0 rgba(0, 0, 0, 0.28);
+    }
+    .btn-3d:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 0 rgba(0, 0, 0, 0.28);
+    }
+    .btn-3d:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.28);
+    }
+
+    .btn-3d-yellow {
+      background: linear-gradient(180deg, #fde047 0%, #eab308 100%);
+      border-bottom: 4px solid #ca8a04;
+      box-shadow: 0 6px 0 #a16207;
+    }
+    .btn-3d-yellow:active {
+      box-shadow: 0 2px 0 #a16207;
+    }
+
+    .btn-3d-blue {
+      background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+      border-bottom: 4px solid #0369a1;
+      box-shadow: 0 6px 0 #075985;
+    }
+    .btn-3d-blue:active {
+      box-shadow: 0 2px 0 #075985;
+    }
+
+    .btn-3d-green {
+      background: linear-gradient(180deg, #4ade80 0%, #16a34a 100%);
+      border-bottom: 4px solid #15803d;
+      box-shadow: 0 6px 0 #166534;
+    }
+
+    /* Option Card Styles */
+    .option-btn {
+      transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .option-btn:hover:not(:disabled) {
+      transform: translateY(-3px) scale(1.01);
+      box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.15);
+    }
+    .option-btn:active:not(:disabled) {
+      transform: translateY(2px) scale(0.99);
+    }
+
+    /* Subtle custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 9999px; }
+  </style>
+</head>
+
+<body class="min-h-screen bg-gradient-to-b from-[#2dd4bf] via-[#38bdf8] to-[#6366f1] text-slate-800 flex flex-col justify-between selection:bg-yellow-300 selection:text-slate-900">
+  
+  <!-- Top Navigation / Game HUD -->
+  <header class="w-full max-w-4xl mx-auto px-4 pt-3 pb-2 z-20">
+    <div class="bg-white/85 backdrop-blur-md rounded-2xl shadow-lg border-2 border-white/80 px-4 py-2 flex items-center justify-between">
+      
+      <!-- Logo Mini & Lives/Streak -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-400 to-yellow-300 flex items-center justify-center shadow-md border-2 border-white transform hover:rotate-6 transition">
+          <i class="fa-solid fa-brain text-amber-900 text-xl"></i>
+        </div>
+        <div>
+          <span class="block text-xs uppercase font-extrabold text-indigo-900 tracking-wider font-game">Racha</span>
+          <div class="flex items-center gap-1 font-game font-bold text-base text-amber-600">
+            <i class="fa-solid fa-fire text-orange-500 animate-pulse"></i>
+            <span id="hud-streak">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Brain Coins HUD -->
+      <div class="flex items-center bg-amber-100/90 border border-amber-300 rounded-full px-3.5 py-1 gap-2 shadow-inner">
+        <div class="w-6 h-6 rounded-full bg-yellow-400 border border-amber-500 flex items-center justify-center text-xs font-black text-amber-900 shadow">
+          🧠
+        </div>
+        <span id="hud-coins" class="font-game font-bold text-amber-900 text-lg">150</span>
+      </div>
+
+      <!-- Audio Mute and Score -->
+      <div class="flex items-center gap-2">
+        <div class="text-right hidden sm:block">
+          <span class="block text-xs uppercase font-extrabold text-slate-500">Puntos</span>
+          <span id="hud-score" class="font-game font-extrabold text-indigo-700 text-lg">0</span>
+        </div>
+        
+        <button id="btn-toggle-sound" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center justify-center text-slate-700 transition" title="Alternar sonido">
+          <i id="sound-icon" class="fa-solid fa-volume-high"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Ambient floating decorative coins & clouds (inspired by Trivia Quest) -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0 opacity-40">
+    <!-- Brain Coin 1 -->
+    <div class="absolute top-16 left-6 anim-float-1 w-12 h-12 rounded-full bg-yellow-300 border-4 border-yellow-500 shadow-xl flex items-center justify-center text-yellow-800 text-xl font-bold">
+      <i class="fa-solid fa-brain"></i>
+    </div>
+    <!-- Brain Coin 2 -->
+    <div class="absolute top-36 right-8 anim-float-2 w-14 h-14 rounded-full bg-yellow-300 border-4 border-yellow-500 shadow-xl flex items-center justify-center text-yellow-800 text-2xl font-bold">
+      <i class="fa-solid fa-brain"></i>
+    </div>
+    <!-- Brain Coin 3 -->
+    <div class="absolute bottom-28 left-12 anim-float-2 w-10 h-10 rounded-full bg-yellow-300 border-4 border-yellow-500 shadow-xl flex items-center justify-center text-yellow-800 text-base font-bold">
+      <i class="fa-solid fa-brain"></i>
+    </div>
+    <!-- Brain Coin 4 -->
+    <div class="absolute bottom-40 right-10 anim-float-1 w-12 h-12 rounded-full bg-yellow-300 border-4 border-yellow-500 shadow-xl flex items-center justify-center text-yellow-800 text-xl font-bold">
+      <i class="fa-solid fa-brain"></i>
+    </div>
+    <!-- Cosmic Sparkles -->
+    <div class="absolute top-1/4 left-1/3 text-white/50 text-2xl animate-pulse"><i class="fa-solid fa-star"></i></div>
+    <div class="absolute top-2/3 right-1/4 text-white/40 text-xl animate-pulse"><i class="fa-solid fa-sparkles"></i></div>
+  </div>
+
+  <!-- Main Interactive Area -->
+  <main class="relative flex-1 w-full max-w-4xl mx-auto px-4 py-3 flex flex-col justify-center items-center z-10">
+
+    <!-- ========================================== -->
+    <!-- SCREEN 1: WELCOME / START SCREEN           -->
+    <!-- ========================================== -->
+    <section id="screen-welcome" class="w-full flex flex-col items-center text-center transition-all duration-300">
+      
+      <!-- Mascot Stage: Willy & Question mark friend -->
+      <div class="relative w-72 h-64 sm:w-80 sm:h-72 my-2 flex items-end justify-center">
+        
+        <!-- Willy SVG Mascot -->
+        <div id="mascot-willy" class="relative z-10 anim-mascot-idle transition-transform duration-300 cursor-pointer">
+          <svg width="190" height="190" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Arms -->
+            <path d="M40 100 Q15 90 25 70" stroke="#94a3b8" stroke-width="8" stroke-linecap="round" fill="none"/>
+            <path d="M160 100 Q185 90 175 70" stroke="#94a3b8" stroke-width="8" stroke-linecap="round" fill="none"/>
+            <circle cx="25" cy="70" r="7" fill="#cbd5e1"/>
+            <circle cx="175" cy="70" r="7" fill="#cbd5e1"/>
+            
+            <!-- Legs -->
+            <path d="M85 165 L80 190" stroke="#94a3b8" stroke-width="8" stroke-linecap="round"/>
+            <path d="M115 165 L120 190" stroke="#94a3b8" stroke-width="8" stroke-linecap="round"/>
+            <ellipse cx="76" cy="192" rx="14" ry="6" fill="#64748b"/>
+            <ellipse cx="124" cy="192" rx="14" ry="6" fill="#64748b"/>
+            
+            <!-- Colorful Wheel Ring -->
+            <g transform="translate(100, 100)">
+              <!-- Segment 1: Red -->
+              <path d="M 0 0 L 80 0 A 80 80 0 0 1 40 69.28 Z" fill="#ef4444" stroke="#ffffff" stroke-width="2"/>
+              <!-- Segment 2: Magenta -->
+              <path d="M 0 0 L 40 69.28 A 80 80 0 0 1 -40 69.28 Z" fill="#ec4899" stroke="#ffffff" stroke-width="2"/>
+              <!-- Segment 3: Purple -->
+              <path d="M 0 0 L -40 69.28 A 80 80 0 0 1 -80 0 Z" fill="#8b5cf6" stroke="#ffffff" stroke-width="2"/>
+              <!-- Segment 4: Blue -->
+              <path d="M 0 0 L -80 0 A 80 80 0 0 1 -40 -69.28 Z" fill="#3b82f6" stroke="#ffffff" stroke-width="2"/>
+              <!-- Segment 5: Green -->
+              <path d="M 0 0 L -40 -69.28 A 80 80 0 0 1 40 -69.28 Z" fill="#22c55e" stroke="#ffffff" stroke-width="2"/>
+              <!-- Segment 6: Yellow -->
+              <path d="M 0 0 L 40 -69.28 A 80 80 0 0 1 80 0 Z" fill="#eab308" stroke="#ffffff" stroke-width="2"/>
+            </g>
+
+            <!-- Inner Face Base (White/Grey with pointy crown top) -->
+            <path d="M100 35 L125 70 A 55 55 0 1 1 75 70 Z" fill="#f8fafc" stroke="#e2e8f0" stroke-width="3" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.15))"/>
+            
+            <!-- Eyes -->
+            <ellipse cx="86" cy="102" rx="5.5" ry="11" fill="#1e293b"/>
+            <ellipse cx="114" cy="102" rx="5.5" ry="11" fill="#1e293b"/>
+            <circle cx="84" cy="98" r="2.2" fill="#ffffff"/>
+            <circle cx="112" cy="98" r="2.2" fill="#ffffff"/>
+            
+            <!-- Smile -->
+            <path d="M78 116 Q100 136 122 116" stroke="#1e293b" stroke-width="5" stroke-linecap="round" fill="none"/>
+            <path d="M74 116 Q78 113 80 118" stroke="#1e293b" stroke-width="3" stroke-linecap="round" fill="none"/>
+            <path d="M126 116 Q122 113 120 118" stroke="#1e293b" stroke-width="3" stroke-linecap="round" fill="none"/>
+
+            <!-- Crown highlight -->
+            <path d="M100 38 L108 55 L92 55 Z" fill="#ffffff" opacity="0.6"/>
+          </svg>
+        </div>
+
+        <!-- Blue Question Mascot Companion -->
+        <div class="relative -ml-4 z-20 anim-float-2 cursor-pointer">
+          <svg width="90" height="110" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Shadow -->
+            <ellipse cx="50" cy="115" rx="25" ry="5" fill="rgba(0,0,0,0.2)"/>
+            <!-- Legs -->
+            <path d="M42 98 L40 112" stroke="#0284c7" stroke-width="4" stroke-linecap="round"/>
+            <path d="M58 98 L60 112" stroke="#0284c7" stroke-width="4" stroke-linecap="round"/>
+            <!-- Question Top -->
+            <path d="M30 40 C30 20, 70 20, 70 40 C70 55, 52 56, 52 72" stroke="#38bdf8" stroke-width="18" stroke-linecap="round" fill="none"/>
+            <path d="M30 40 C30 20, 70 20, 70 40 C70 55, 52 56, 52 72" stroke="#0284c7" stroke-width="12" stroke-linecap="round" fill="none"/>
+            <!-- Question Dot -->
+            <circle cx="50" cy="90" r="14" fill="#38bdf8"/>
+            <circle cx="50" cy="90" r="11" fill="#0ea5e9"/>
+            <!-- Face on Dot -->
+            <ellipse cx="46" cy="88" rx="2" ry="3.5" fill="#0f172a"/>
+            <ellipse cx="54" cy="88" rx="2" ry="3.5" fill="#0f172a"/>
+            <path d="M46 94 Q50 98 54 94" stroke="#0f172a" stroke-width="2" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+
+      </div>
+
+      <!-- Title Banner with 3D outline look -->
+      <div class="mt-1 mb-4">
+        <h1 class="font-game text-4xl sm:text-6xl font-black text-white tracking-wide drop-shadow-[0_5px_5px_rgba(0,0,0,0.4)] uppercase">
+          TRIVIA <span class="text-yellow-300">QUEST</span>
+        </h1>
+        <p class="text-white/90 font-bold text-base sm:text-lg drop-shadow mt-1">
+          🐾 Animales salvajes, misterios del cosmos y desafíos del saber
+        </p>
+      </div>
+
+      <!-- Selector de Dificultad (Modo Fácil activado por defecto) -->
+      <div class="mb-4 bg-white/90 backdrop-blur-sm p-2 rounded-2xl shadow-lg border-2 border-white flex items-center gap-2 max-w-sm w-full mx-auto">
+        <button id="mode-facil-btn" class="flex-1 py-2 px-3 rounded-xl font-game font-bold text-sm sm:text-base flex items-center justify-center gap-1.5 transition-all bg-emerald-500 text-white shadow-md border-2 border-emerald-600 scale-102">
+          <span>🟢</span> Modo Fácil
+        </button>
+        <button id="mode-dificil-btn" class="flex-1 py-2 px-3 rounded-xl font-game font-bold text-sm sm:text-base flex items-center justify-center gap-1.5 transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 border-2 border-transparent">
+          <span>🧠</span> Desafío Pro
+        </button>
+      </div>
+
+      <!-- Start Button & Category Quick Select -->
+      <div class="flex flex-col sm:flex-row items-center gap-4 w-full max-w-md px-4">
+        <button id="btn-start-game" class="w-full py-4 rounded-2xl font-game text-2xl font-black text-amber-950 btn-3d-yellow tracking-wider flex items-center justify-center gap-3">
+          <i class="fa-solid fa-play text-xl"></i>
+          ¡GIRAR Y JUGAR!
+        </button>
+      </div>
+
+      <!-- Category Preview Pills -->
+      <div class="mt-6 flex flex-wrap justify-center gap-2 max-w-lg px-2">
+        <span class="px-3 py-1 bg-emerald-500/90 text-white rounded-full text-xs font-bold shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-paw"></i> Reino Animal</span>
+        <span class="px-3 py-1 bg-blue-600/90 text-white rounded-full text-xs font-bold shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-rocket"></i> Espacio & Cosmos</span>
+        <span class="px-3 py-1 bg-amber-500/90 text-white rounded-full text-xs font-bold shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-flask"></i> Ciencia Salvaje</span>
+        <span class="px-3 py-1 bg-orange-500/90 text-white rounded-full text-xs font-bold shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-earth-americas"></i> Geografía</span>
+        <span class="px-3 py-1 bg-rose-500/90 text-white rounded-full text-xs font-bold shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-palette"></i> Arte & Cultura</span>
+        <span class="px-3 py-1 bg-purple-600/90 text-white rounded-full text-xs font-bold shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-crown"></i> Desafío Maestro</span>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SCREEN 2: WHEEL ROULETTE SCREEN            -->
+    <!-- ========================================== -->
+    <section id="screen-wheel" class="w-full hidden flex-col items-center text-center transition-all duration-300">
+      
+      <!-- Roulette Header Prompt -->
+      <div class="bg-white/90 backdrop-blur-sm rounded-full px-6 py-2 shadow-md border border-white mb-3">
+        <h2 id="wheel-instruction" class="font-game text-xl sm:text-2xl font-bold text-indigo-900">
+          ¡Haz girar la Ruleta del Saber!
+        </h2>
+      </div>
+
+      <!-- Canvas Roulette Container -->
+      <div class="relative w-72 h-72 sm:w-88 sm:h-88 my-2 flex items-center justify-center">
+        
+        <!-- Roulette Pointer Needle -->
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-30 drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)]">
+          <div class="w-7 h-10 bg-gradient-to-b from-amber-300 to-yellow-500 border-2 border-amber-900 rounded-b-full flex items-center justify-center transform rotate-180">
+            <div class="w-2.5 h-2.5 rounded-full bg-red-600"></div>
+          </div>
+        </div>
+
+        <!-- Wheel Canvas -->
+        <canvas id="roulette-canvas" width="340" height="340" class="rounded-full shadow-2xl border-4 border-white transition-transform"></canvas>
+
+        <!-- Center Wheel Button (Willy's Smile Hub) -->
+        <button id="btn-spin-wheel" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-gradient-to-tr from-slate-100 to-white border-4 border-indigo-900 shadow-xl flex flex-col items-center justify-center text-indigo-950 font-game font-black text-sm tracking-tighter btn-3d z-20">
+          <i class="fa-solid fa-rotate text-indigo-600 text-lg mb-0.5"></i>
+          GIRAR
+        </button>
+
+      </div>
+
+      <!-- Selected Category Banner (Shown after spin stops) -->
+      <div id="category-picked-banner" class="opacity-0 transform translate-y-3 transition-all duration-300 mt-3 py-2 px-6 rounded-2xl bg-white shadow-xl border-2 border-indigo-200 flex items-center gap-3">
+        <span id="picked-icon" class="text-3xl">🐾</span>
+        <div class="text-left">
+          <span class="block text-xs uppercase font-extrabold text-slate-400">Categoría seleccionada</span>
+          <span id="picked-name" class="font-game text-lg font-black text-indigo-900">Reino Animal</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SCREEN 3: ACTIVE TRIVIA QUESTION           -->
+    <!-- ========================================== -->
+    <section id="screen-question" class="w-full max-w-xl hidden flex-col items-center transition-all duration-300">
+      
+      <!-- Question Card Container -->
+      <div class="w-full bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border-4 border-white p-5 sm:p-7 relative overflow-hidden">
+        
+        <!-- Header: Category & Timer -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <span id="q-category-pill" class="px-3.5 py-1 rounded-full text-xs font-black uppercase text-white tracking-wider flex items-center gap-1.5 shadow-sm bg-emerald-500">
+              <i id="q-category-icon" class="fa-solid fa-paw"></i>
+              <span id="q-category-title">Reino Animal</span>
+            </span>
+          </div>
+
+          <!-- Countdown Timer -->
+          <div class="flex items-center gap-2">
+            <i class="fa-regular fa-clock text-indigo-500 text-base"></i>
+            <span id="q-timer-text" class="font-game text-xl font-black text-slate-800">15s</span>
+          </div>
+        </div>
+
+        <!-- Timer progress bar -->
+        <div class="w-full h-2.5 bg-slate-100 rounded-full mt-3 overflow-hidden shadow-inner">
+          <div id="q-timer-bar" class="h-full bg-gradient-to-r from-emerald-400 via-yellow-400 to-rose-500 rounded-full transition-all duration-1000 w-full"></div>
+        </div>
+
+        <!-- Character Reaction & Mascot Bubble -->
+        <div class="flex items-center gap-3 my-4">
+          <div id="q-mini-mascot" class="w-14 h-14 shrink-0 transition-transform duration-300">
+            <!-- Mini mascot avatar -->
+            <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow">
+              <circle cx="50" cy="50" r="45" fill="#f8fafc" stroke="#3b82f6" stroke-width="4"/>
+              <ellipse cx="40" cy="45" rx="4" ry="7" fill="#0f172a"/>
+              <ellipse cx="60" cy="45" rx="4" ry="7" fill="#0f172a"/>
+              <path id="mini-mouth" d="M38 60 Q50 72 62 60" stroke="#0f172a" stroke-width="4" stroke-linecap="round" fill="none"/>
+            </svg>
+          </div>
+          
+          <div class="bg-indigo-50 border border-indigo-100 rounded-2xl px-4 py-2 text-indigo-950 font-bold text-sm shadow-sm flex-1">
+            <span id="q-mascot-dialog">¡Demuestra cuánto sabes! Elige tu respuesta.</span>
+          </div>
+        </div>
+
+        <!-- The Question Text -->
+        <h3 id="q-text" class="font-game text-lg sm:text-2xl font-bold text-slate-800 leading-snug my-2 min-h-[3.5rem] flex items-center">
+          ¿Qué especie posee el período de gestación más prolongado entre todos los mamíferos terrestres vivientes?
+        </h3>
+
+        <!-- Answers Grid -->
+        <div id="options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+          <!-- Option A -->
+          <button class="option-btn w-full p-3.5 rounded-2xl text-left font-bold text-slate-700 bg-slate-50 hover:bg-indigo-50 border-2 border-slate-200 hover:border-indigo-400 flex items-center gap-3 shadow-sm transition" data-index="0">
+            <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-game font-black text-sm shrink-0">A</span>
+            <span class="option-text flex-1 text-sm sm:text-base">Opción 1</span>
+          </button>
+          
+          <!-- Option B -->
+          <button class="option-btn w-full p-3.5 rounded-2xl text-left font-bold text-slate-700 bg-slate-50 hover:bg-indigo-50 border-2 border-slate-200 hover:border-indigo-400 flex items-center gap-3 shadow-sm transition" data-index="1">
+            <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-game font-black text-sm shrink-0">B</span>
+            <span class="option-text flex-1 text-sm sm:text-base">Opción 2</span>
+          </button>
+
+          <!-- Option C -->
+          <button class="option-btn w-full p-3.5 rounded-2xl text-left font-bold text-slate-700 bg-slate-50 hover:bg-indigo-50 border-2 border-slate-200 hover:border-indigo-400 flex items-center gap-3 shadow-sm transition" data-index="2">
+            <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-game font-black text-sm shrink-0">C</span>
+            <span class="option-text flex-1 text-sm sm:text-base">Opción 3</span>
+          </button>
+
+          <!-- Option D -->
+          <button class="option-btn w-full p-3.5 rounded-2xl text-left font-bold text-slate-700 bg-slate-50 hover:bg-indigo-50 border-2 border-slate-200 hover:border-indigo-400 flex items-center gap-3 shadow-sm transition" data-index="3">
+            <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-game font-black text-sm shrink-0">D</span>
+            <span class="option-text flex-1 text-sm sm:text-base">Opción 4</span>
+          </button>
+        </div>
+
+        <!-- Curiosidad / Explanation Box (Shown after answering) -->
+        <div id="explanation-box" class="hidden mt-4 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs sm:text-sm">
+          <div class="font-bold flex items-center gap-1.5 text-amber-800 mb-1">
+            <i class="fa-solid fa-lightbulb text-yellow-500"></i> ¿Sabías que?
+          </div>
+          <p id="explanation-text">Explicación fascinante sobre el animal o tema.</p>
+        </div>
+
+        <!-- Next / Continue Button -->
+        <div id="next-action-container" class="hidden mt-4 pt-2 border-t border-slate-100 flex justify-end">
+          <button id="btn-next-question" class="py-3 px-6 rounded-xl font-game text-lg font-bold text-white btn-3d-blue flex items-center gap-2">
+            <span>Siguiente</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- In-Game Power-Ups (Utilidades con monedas) -->
+      <div class="w-full max-w-xl mt-3 flex items-center justify-between gap-2 px-2">
+        <div class="text-xs font-bold text-white drop-shadow">
+          Comodines:
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- 50:50 Power Up -->
+          <button id="powerup-5050" class="px-3 py-1.5 rounded-xl bg-white/90 hover:bg-white text-indigo-900 text-xs font-bold flex items-center gap-1.5 shadow border border-white hover:border-yellow-400 transition" title="Elimina dos respuestas incorrectas (-50 monedas)">
+            <span>✂️ 50:50</span>
+            <span class="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px]">50 🧠</span>
+          </button>
+
+          <!-- Extra Time Power Up -->
+          <button id="powerup-time" class="px-3 py-1.5 rounded-xl bg-white/90 hover:bg-white text-indigo-900 text-xs font-bold flex items-center gap-1.5 shadow border border-white hover:border-yellow-400 transition" title="Añade 10 segundos extra (-30 monedas)">
+            <span>⏳ +10s</span>
+            <span class="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px]">30 🧠</span>
+          </button>
+
+          <!-- Skip Question Power Up -->
+          <button id="powerup-skip" class="px-3 py-1.5 rounded-xl bg-white/90 hover:bg-white text-indigo-900 text-xs font-bold flex items-center gap-1.5 shadow border border-white hover:border-yellow-400 transition" title="Pasa a otra pregunta sin penalización (-60 monedas)">
+            <span>⏭️ Pasar</span>
+            <span class="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px]">60 🧠</span>
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SCREEN 4: GAME SUMMARY & STATS             -->
+    <!-- ========================================== -->
+    <section id="screen-summary" class="w-full max-w-md hidden flex-col items-center text-center transition-all duration-300">
+      
+      <div class="w-full bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border-4 border-white p-6 sm:p-8">
+        
+        <!-- Trophy Icon & Badge -->
+        <div class="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-yellow-400 to-amber-300 border-4 border-white shadow-xl flex items-center justify-center text-amber-950 text-3xl mb-3 anim-pulse-glow">
+          <i class="fa-solid fa-trophy"></i>
+        </div>
+
+        <h2 class="font-game text-3xl font-black text-slate-800">¡Partida Completada!</h2>
+        <p class="text-slate-500 font-bold text-sm mt-1">Has desafiado los confines del saber universal</p>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-2 gap-3 my-6">
+          <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-2xl">
+            <span class="block text-xs uppercase font-extrabold text-indigo-400">Puntaje Final</span>
+            <span id="summary-score" class="font-game text-2xl font-black text-indigo-700">0</span>
+          </div>
+
+          <div class="bg-amber-50 border border-amber-100 p-3 rounded-2xl">
+            <span class="block text-xs uppercase font-extrabold text-amber-600">Monedas 🧠</span>
+            <span id="summary-coins" class="font-game text-2xl font-black text-amber-700">+0</span>
+          </div>
+
+          <div class="bg-emerald-50 border border-emerald-100 p-3 rounded-2xl">
+            <span class="block text-xs uppercase font-extrabold text-emerald-600">Aciertos</span>
+            <span id="summary-accuracy" class="font-game text-2xl font-black text-emerald-700">0/0</span>
+          </div>
+
+          <div class="bg-rose-50 border border-rose-100 p-3 rounded-2xl">
+            <span class="block text-xs uppercase font-extrabold text-rose-500">Mejor Racha</span>
+            <span id="summary-streak" class="font-game text-2xl font-black text-rose-600">0</span>
+          </div>
+        </div>
+
+        <!-- Restart Button -->
+        <button id="btn-restart-game" class="w-full py-4 rounded-2xl font-game text-xl font-black text-amber-950 btn-3d-yellow tracking-wider flex items-center justify-center gap-2">
+          <i class="fa-solid fa-rotate-right"></i>
+          ¡JUGAR OTRA VEZ!
+        </button>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full max-w-4xl mx-auto px-4 py-2 text-center text-white/80 text-xs font-semibold z-10">
+    <p>Inspirado en el universo interactivo de <span class="font-bold text-yellow-200">Trivia Quest</span> • Zoología, Cosmos y Ciencia</p>
+  </footer>
+
+  <!-- Notification Toast Box (No alerts!) -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white px-5 py-2.5 rounded-full shadow-2xl text-xs sm:text-sm font-bold opacity-0 pointer-events-none transition-all duration-300 z-50 flex items-center gap-2 border border-slate-700">
+    <i id="toast-icon" class="fa-solid fa-circle-info text-yellow-400"></i>
+    <span id="toast-msg">Mensaje informativo</span>
+  </div>
+
+  <script>
+    /**
+     * Trivia Quest: Complete Game Logic & Synthesized Audio
+     */
+
+    // --- CATEGORIES DEFINITION ---
+    const CATEGORIES = [
+      { id: 'fauna', name: 'Reino Animal', color: '#22c55e', icon: 'fa-paw', emoji: '🐾' },
+      { id: 'cosmos', name: 'Espacio & Cosmos', color: '#3b82f6', icon: 'fa-rocket', emoji: '🚀' },
+      { id: 'science', name: 'Ciencia Salvaje', color: '#eab308', icon: 'fa-flask', emoji: '🧪' },
+      { id: 'geography', name: 'Geografía', color: '#f97316', icon: 'fa-earth-americas', emoji: '🌍' },
+      { id: 'culture', name: 'Arte & Cultura', color: '#ef4444', icon: 'fa-palette', emoji: '🎨' },
+      { id: 'bonus', name: 'Desafío Estrella', color: '#a855f7', icon: 'fa-crown', emoji: '⭐' }
+    ];
+
+    // --- PREGUNTAS FÁCILES (MODO FÁCIL: ANIMALES Y MÁS) ---
+    const QUESTIONS_EASY = [
+      {
+        category: 'fauna',
+        question: '¿Qué animal es popularmente conocido como el "Rey de la Selva"?',
+        options: ['El león', 'El elefante', 'La cebra', 'El oso panda'],
+        answer: 0,
+        fact: '¡Los leones viven en manadas y su rugido puede escucharse a más de 8 kilómetros de distancia!'
+      },
+      {
+        category: 'fauna',
+        question: '¿Cuál es el animal terrestre más rápido del mundo al correr?',
+        options: ['El caballo', 'El guepardo (chita)', 'El leopardo', 'El canguro'],
+        answer: 1,
+        fact: '¡El guepardo puede alcanzar más de 100 km/h en solo 3 segundos, más rápido que muchos autos deportivos!'
+      },
+      {
+        category: 'fauna',
+        question: '¿Qué animal tiene una trompa muy larga con la que puede beber agua y agarrar cosas?',
+        options: ['La jirafa', 'El rinoceronte', 'El elefante', 'El hipopótamo'],
+        answer: 2,
+        fact: '¡La trompa del elefante tiene más de 40.000 músculos y no tiene ningún hueso!'
+      },
+      {
+        category: 'fauna',
+        question: '¿Cuál es el animal con el cuello más largo del mundo?',
+        options: ['El avestruz', 'La jirafa', 'La cebra', 'El camello'],
+        answer: 1,
+        fact: '¡La lengua de la jirafa es tan larga (casi 50 cm) y oscura que le sirve para limpiarse hasta sus propias orejas!'
+      },
+      {
+        category: 'fauna',
+        question: '¿Qué comen casi exclusivamente los osos panda gigantes?',
+        options: ['Pescado fresco', 'Bambú', 'Frutas silvestres', 'Miel de abeja'],
+        answer: 1,
+        fact: '¡Un oso panda puede pasar hasta 12 horas al día comiendo hojas y tallos de bambú!'
+      },
+      {
+        category: 'fauna',
+        question: '¿Cuál es el mamífero más grande de todo el planeta Tierra?',
+        options: ['El tiburón blanco', 'La ballena azul', 'El calamar gigante', 'El elefante marino'],
+        answer: 1,
+        fact: '¡El corazón de una ballena azul es tan grande como un auto pequeño y su lengua pesa como un elefante!'
+      },
+      {
+        category: 'fauna',
+        question: '¿Cuántas patas tiene una araña?',
+        options: ['6 patas', '8 patas', '4 patas', '10 patas'],
+        answer: 1,
+        fact: 'Los insectos tienen 6 patas, pero las arañas son arácnidos y siempre tienen 8 patas.'
+      },
+      {
+        category: 'fauna',
+        question: '¿Qué ave no puede volar pero nada increíblemente rápido en aguas heladas?',
+        options: ['El loro', 'El pingüino', 'El águila', 'El tucán'],
+        answer: 1,
+        fact: '¡Los pingüinos usan sus alas como aletas submarinas para bucear y cazar peces a toda velocidad!'
+      },
+      {
+        category: 'fauna',
+        question: '¿Qué animal produce la dulce miel que comemos en casa?',
+        options: ['La hormiga', 'La abeja', 'La avispa', 'La mariposa'],
+        answer: 1,
+        fact: '¡Una colmena de abejas puede visitar millones de flores para elaborar deliciosa miel pura!'
+      },
+      {
+        category: 'cosmos',
+        question: '¿Cuál es la gigantesca estrella brillante que alumbra la Tierra durante el día?',
+        options: ['La Luna', 'El Sol', 'Marte', 'La Estrella Polar'],
+        answer: 1,
+        fact: '¡El Sol es tan inmenso que dentro de él cabrían más de un millón de planetas Tierra!'
+      },
+      {
+        category: 'cosmos',
+        question: '¿Cómo se llama el satélite natural que brilla en el cielo durante la noche?',
+        options: ['Venus', 'La Luna', 'Saturno', 'Júpiter'],
+        answer: 1,
+        fact: 'La Luna no emite luz propia; brilla porque refleja los rayos que le llegan del Sol.'
+      },
+      {
+        category: 'cosmos',
+        question: '¿En qué planeta vivimos todos nosotros?',
+        options: ['Marte', 'La Tierra', 'Júpiter', 'Neptuno'],
+        answer: 1,
+        fact: 'La Tierra es llamada el "Planeta Azul" porque más del 70% de su superficie está cubierta de agua.'
+      },
+      {
+        category: 'science',
+        question: '¿Qué gas invisible toman los animales y las personas para poder respirar?',
+        options: ['Oxígeno', 'Helio', 'Dióxido de carbono', 'Metano'],
+        answer: 0,
+        fact: 'Las plantas y árboles absorben dióxido de carbono y liberan el oxígeno fresco que respiramos.'
+      },
+      {
+        category: 'science',
+        question: '¿En qué se convierte el agua cuando se congela a muy baja temperatura?',
+        options: ['En vapor', 'En hielo', 'En humo', 'En lava'],
+        answer: 1,
+        fact: 'A los cero grados Celsius, el agua líquida se transforma en hielo sólido y flotante.'
+      },
+      {
+        category: 'geography',
+        question: '¿Qué animal rayado blanco y negro es nativo de las sabanas de África?',
+        options: ['El tigre', 'La cebra', 'El panda', 'El zorrillo'],
+        answer: 1,
+        fact: 'No hay dos cebras con el mismo patrón de rayas; cada diseño es único como una huella digital.'
+      },
+      {
+        category: 'bonus',
+        question: '¿Qué animal salta muy alto y lleva a su bebé en una bolsita en la panza?',
+        options: ['El canguro', 'El conejo', 'El mono', 'La rana'],
+        answer: 0,
+        fact: 'La bolsita del canguro se llama marsupio y en ella la cría se alimenta y crece bien protegida.'
+      }
+    ];
+
+    // --- CURATED QUESTION BANK (MODO DESAFÍO / EXPERTO) ---
+    const QUESTIONS_DB = [
+      // REINO ANIMAL
+      {
+        category: 'fauna',
+        question: '¿Qué especie posee el período de gestación más prolongado entre todos los mamíferos terrestres vivientes?',
+        options: ['El rinoceronte blanco', 'El elefante africano', 'La ballena azul', 'La jirafa'],
+        answer: 1,
+        fact: 'El elefante africano gesta a sus crías durante casi 22 meses (unos 660 días), permitiendo un desarrollo cerebral avanzado.'
+      },
+      {
+        category: 'fauna',
+        question: '¿Cuál de las siguientes aves es capaz de volar en retroceso y mantener un vuelo estacionario batiendo sus alas en forma de ocho?',
+        options: ['El vencejo real', 'El martín pescador', 'El colibrí zunzuncito', 'El halcón peregrino'],
+        answer: 2,
+        fact: 'Los colibríes pueden batir sus alas hasta 80 veces por segundo, siendo los únicos vertebrados capaces de volar hacia atrás y de cabeza.'
+      },
+      {
+        category: 'fauna',
+        question: '¿Qué estructura sensorial especializada emplean los tiburones para detectar los campos bioeléctricos de sus presas?',
+        options: ['Línea lateral profunda', 'Ampollas de Lorenzini', 'Órgano de Jacobson', 'Fosetas loreales'],
+        answer: 1,
+        fact: 'Las ampollas de Lorenzini son poros rellenos de gel electroconductor que detectan millonésimas de voltio emitidas por el latido cardíaco de otros peces.'
+      },
+      {
+        category: 'fauna',
+        question: '¿Qué animal marino posee tres corazones, sangre de color azul y cerebros en sus extremidades?',
+        options: ['La medusa avispa', 'El calamar gigante', 'El pulpo común', 'La mantarraya'],
+        answer: 2,
+        fact: 'La sangre del pulpo usa hemocianina (rica en cobre) para transportar oxígeno en aguas frías, dándole su color azul característico.'
+      },
+      {
+        category: 'fauna',
+        question: '¿Cuál es el único orden de mamíferos dotado de alas auténticas y capacidad de vuelo propulsado y activo?',
+        options: ['Quirópteros (Murciélagos)', 'Dermópteros (Lémures voladores)', 'Monotremas', 'Marsupiales planeadores'],
+        answer: 0,
+        fact: 'A diferencia de las ardillas voladoras que solo planean, los murciélagos tienen dedos alargados que mueven sus alas con impulso autónomo.'
+      },
+      {
+        category: 'fauna',
+        question: '¿Qué estado metabólico permite a los tardígrados suspender su actividad biológica para resistir el vacío del espacio?',
+        options: ['Bioluminiscencia', 'Criptobiosis', 'Metamorfosis', 'Ecdisis tardía'],
+        answer: 1,
+        fact: 'En criptobiosis, el agua corporal del oso de agua se reduce al 1% y su metabolismo cae al 0.01%, soportando radiación extrema y vacío cósmico.'
+      },
+
+      // ESPACIO & COSMOS
+      {
+        category: 'cosmos',
+        question: '¿Aproximadamente cuánto tiempo tarda la luz del Sol en recorrer el espacio y llegar a la Tierra?',
+        options: ['8 minutos y 20 segundos', '1 segundo', '1 hora exacta', '24 minutos'],
+        answer: 0,
+        fact: 'Viajando a casi 300,000 km/s a lo largo de 150 millones de kilómetros, los fotones solares tardan unos 500 segundos en alcanzarnos.'
+      },
+      {
+        category: 'cosmos',
+        question: '¿Cuál es el planeta más caliente de nuestro sistema solar debido a su feroz efecto invernadero?',
+        options: ['Mercurio', 'Venus', 'Marte', 'Júpiter'],
+        answer: 1,
+        fact: 'Aunque Mercurio está más cerca del Sol, la densa atmósfera de dióxido de carbono de Venus atrapa el calor alcanzando más de 465 °C.'
+      },
+      {
+        category: 'cosmos',
+        question: '¿Cómo se denomina la región límite alrededor de un agujero negro de la cual nada, ni siquiera la luz, puede escapar?',
+        options: ['Disco de acreción', 'Horizonte de sucesos', 'Singularidad cuántica', 'Esfera de Dyson'],
+        answer: 1,
+        fact: 'El horizonte de sucesos es el punto de no retorno: la velocidad de escape en su interior supera la velocidad de la luz en el vacío.'
+      },
+
+      // CIENCIA SALVAJE
+      {
+        category: 'science',
+        question: '¿Cuál es el principal biopolímero estructural que conforma el exoesqueleto rígido de los artrópodos e insectos?',
+        options: ['Celulosa', 'Queratina', 'Quitina', 'Colágeno'],
+        answer: 2,
+        fact: 'La quitina es un polisacárido resistente y flexible que, al combinarse con carbonato de calcio, da dureza a escarabajos y cangrejos.'
+      },
+      {
+        category: 'science',
+        question: '¿Qué fenómeno permite a animales como las luciérnagas y ciertos peces abisales generar luz sin emitir calor?',
+        options: ['Fluorescencia UV', 'Bioluminiscencia', 'Fosforilación oxidativa', 'Electrogénesis'],
+        answer: 1,
+        fact: 'La enzima luciferasa oxida el sustrato luciferina, convirtiendo casi el 100% de la energía química directamente en luz fría visible.'
+      },
+
+      // GEOGRAFÍA
+      {
+        category: 'geography',
+        question: '¿Cuál es considerado el desierto no polar más árido del mundo, donde algunas zonas no han recibido lluvia en siglos?',
+        options: ['Desierto del Sahara', 'Desierto de Atacama', 'Desierto de Gobi', 'Desierto de Kalahari'],
+        answer: 1,
+        fact: 'El desierto de Atacama en Chile es tan seco que la NASA lo utiliza para probar vehículos exploradores diseñados para Marte.'
+      },
+      {
+        category: 'geography',
+        question: '¿Qué río es el más caudaloso y largo del planeta Tierra, conteniendo cerca de una quinta parte del agua dulce fluvial?',
+        options: ['Río Nilo', 'Río Amazonas', 'Río Yangtsé', 'Río Misisipi'],
+        answer: 1,
+        fact: 'El río Amazonas vierte más de 200,000 metros cúbicos de agua por segundo en el océano Atlántico.'
+      },
+
+      // ARTE & CULTURA
+      {
+        category: 'culture',
+        question: '¿En qué país se originó originalmente el arte tradicional del plegado de papel conocido como Origami?',
+        options: ['China', 'Japón', 'Corea del Sur', 'Tailandia'],
+        answer: 1,
+        fact: 'Aunque el papel se inventó en China, el origami como disciplina y ritual cultural floreció y se perfeccionó en Japón durante el periodo Heian.'
+      },
+
+      // DESAFÍO ESTRELLA
+      {
+        category: 'bonus',
+        question: '¿Qué mamífero semiacuático endémico de Australia pone huevos, posee espolones venenosos y tiene pico de pato?',
+        options: ['El ornitorrinco', 'El equidna común', 'El wombat', 'El demonio de Tasmania'],
+        answer: 0,
+        fact: 'El ornitorrinco es un monotrema; sus machos cuentan con espolones en las patas traseras capaces de liberar un veneno paralizante.'
+      }
+    ];
+
+    // --- GAME STATE ---
+    let state = {
+      score: 0,
+      coins: 150,
+      streak: 0,
+      bestStreak: 0,
+      correctCount: 0,
+      totalAnswered: 0,
+      currentQuestion: null,
+      selectedCategory: null,
+      soundEnabled: true,
+      timerInterval: null,
+      timeLeft: 20,
+      difficulty: 'facil', // Default to easy mode!
+      isSpinning: false,
+      questionAnswered: false,
+      usedQuestionIndices: []
+    };
+
+    // Difficulty buttons setup
+    const modeFacilBtn = document.getElementById('mode-facil-btn');
+    const modeDificilBtn = document.getElementById('mode-dificil-btn');
+
+    function setDifficulty(diff) {
+      state.difficulty = diff;
+      state.usedQuestionIndices = [];
+      if (diff === 'facil') {
+        modeFacilBtn.className = 'flex-1 py-2 px-3 rounded-xl font-game font-bold text-sm sm:text-base flex items-center justify-center gap-1.5 transition-all bg-emerald-500 text-white shadow-md border-2 border-emerald-600 scale-102';
+        modeDificilBtn.className = 'flex-1 py-2 px-3 rounded-xl font-game font-bold text-sm sm:text-base flex items-center justify-center gap-1.5 transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 border-2 border-transparent';
+        showToast('Modo Fácil activado (¡preguntas divertidas!)', 'fa-face-smile');
+      } else {
+        modeDificilBtn.className = 'flex-1 py-2 px-3 rounded-xl font-game font-bold text-sm sm:text-base flex items-center justify-center gap-1.5 transition-all bg-indigo-600 text-white shadow-md border-2 border-indigo-700 scale-102';
+        modeFacilBtn.className = 'flex-1 py-2 px-3 rounded-xl font-game font-bold text-sm sm:text-base flex items-center justify-center gap-1.5 transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 border-2 border-transparent';
+        showToast('Modo Desafío Pro activado', 'fa-brain');
+      }
+    }
+
+    if (modeFacilBtn && modeDificilBtn) {
+      modeFacilBtn.addEventListener('click', () => setDifficulty('facil'));
+      modeDificilBtn.addEventListener('click', () => setDifficulty('dificil'));
+    }
+
+    // DOM Elements
+    const hudCoins = document.getElementById('hud-coins');
+    const hudScore = document.getElementById('hud-score');
+    const hudStreak = document.getElementById('hud-streak');
+    const btnToggleSound = document.getElementById('btn-toggle-sound');
+    const soundIcon = document.getElementById('sound-icon');
+
+    // Screens
+    const screenWelcome = document.getElementById('screen-welcome');
+    const screenWheel = document.getElementById('screen-wheel');
+    const screenQuestion = document.getElementById('screen-question');
+    const screenSummary = document.getElementById('screen-summary');
+
+    // Roulette elements
+    const rouletteCanvas = document.getElementById('roulette-canvas');
+    const ctx = rouletteCanvas.getContext('2d');
+    const btnSpinWheel = document.getElementById('btn-spin-wheel');
+    const categoryPickedBanner = document.getElementById('category-picked-banner');
+    const pickedIcon = document.getElementById('picked-icon');
+    const pickedName = document.getElementById('picked-name');
+
+    // Question elements
+    const qCategoryPill = document.getElementById('q-category-pill');
+    const qCategoryIcon = document.getElementById('q-category-icon');
+    const qCategoryTitle = document.getElementById('q-category-title');
+    const qTimerText = document.getElementById('q-timer-text');
+    const qTimerBar = document.getElementById('q-timer-bar');
+    const qMascotDialog = document.getElementById('q-mascot-dialog');
+    const qText = document.getElementById('q-text');
+    const optionsContainer = document.getElementById('options-container');
+    const explanationBox = document.getElementById('explanation-box');
+    const explanationText = document.getElementById('explanation-text');
+    const nextActionContainer = document.getElementById('next-action-container');
+    const btnNextQuestion = document.getElementById('btn-next-question');
+
+    // Summary elements
+    const summaryScore = document.getElementById('summary-score');
+    const summaryCoins = document.getElementById('summary-coins');
+    const summaryAccuracy = document.getElementById('summary-accuracy');
+    const summaryStreak = document.getElementById('summary-streak');
+
+    // --- SYNTHESIZED SOUND SYSTEM (Tone.js) ---
+    let synthTick, synthWin, synthBuzz, synthCoin, synthFanfare;
+
+    function initAudio() {
+      try {
+        if (!synthTick) {
+          synthTick = new Tone.MembraneSynth({
+            pitchDecay: 0.008,
+            octaves: 2,
+            envelope: { attack: 0.001, decay: 0.08, sustain: 0.01, release: 0.05 }
+          }).toDestination();
+          synthTick.volume.value = -12;
+
+          synthCoin = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.005, decay: 0.15, sustain: 0, release: 0.1 }
+          }).toDestination();
+          synthCoin.volume.value = -8;
+
+          synthWin = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: 'triangle' },
+            envelope: { attack: 0.02, decay: 0.25, sustain: 0.1, release: 0.2 }
+          }).toDestination();
+
+          synthBuzz = new Tone.Synth({
+            oscillator: { type: 'sawtooth' },
+            envelope: { attack: 0.05, decay: 0.3, sustain: 0, release: 0.1 }
+          }).toDestination();
+          synthBuzz.volume.value = -10;
+        }
+      } catch (e) {
+        console.warn('Audio initialization deferred:', e);
+      }
+    }
+
+    function playSound(type) {
+      if (!state.soundEnabled) return;
+      try {
+        Tone.start();
+        initAudio();
+        const now = Tone.now();
+
+        if (type === 'tick' && synthTick) {
+          synthTick.triggerAttackRelease('C4', '16n', now);
+        } else if (type === 'coin' && synthCoin) {
+          synthCoin.triggerAttackRelease(['B5', 'E6'], '16n', now);
+        } else if (type === 'correct' && synthWin) {
+          synthWin.triggerAttackRelease(['C5', 'E5', 'G5', 'C6'], '8n', now);
+        } else if (type === 'wrong' && synthBuzz) {
+          synthBuzz.triggerAttackRelease('F2', '8n', now);
+        } else if (type === 'spin' && synthTick) {
+          synthTick.triggerAttackRelease('G4', '32n', now);
+        }
+      } catch (err) {
+        // Safe fallback if audio isn't yet unmuted by user gesture
+      }
+    }
+
+    // --- CANVAS ROULETTE RENDERING ---
+    let wheelAngle = 0;
+    const numSlices = CATEGORIES.length;
+    const arcSize = (2 * Math.PI) / numSlices;
+
+    function drawRouletteWheel() {
+      const w = rouletteCanvas.width;
+      const h = rouletteCanvas.height;
+      const cx = w / 2;
+      const cy = h / 2;
+      const radius = cx - 12;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Outer rim gold shadow
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius + 8, 0, 2 * Math.PI);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fill();
+      ctx.restore();
+
+      // Draw wedges
+      for (let i = 0; i < numSlices; i++) {
+        const angle = wheelAngle + i * arcSize;
+        const cat = CATEGORIES[i];
+
+        ctx.beginPath();
+        ctx.fillStyle = cat.color;
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, radius, angle, angle + arcSize);
+        ctx.lineTo(cx, cy);
+        ctx.fill();
+
+        // White border line
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Category icon & name text
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(angle + arcSize / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 15px Fredoka, sans-serif';
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 4;
+        ctx.fillText(`${cat.emoji} ${cat.name}`, radius - 20, 5);
+        ctx.restore();
+      }
+
+      // Draw shiny dots on outer edge
+      const numDots = 24;
+      for (let j = 0; j < numDots; j++) {
+        const dotAngle = (j * (2 * Math.PI)) / numDots;
+        const dx = cx + (radius + 4) * Math.cos(dotAngle);
+        const dy = cy + (radius + 4) * Math.sin(dotAngle);
+        ctx.beginPath();
+        ctx.arc(dx, dy, 3, 0, 2 * Math.PI);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+      }
+    }
+
+    function spinWheel() {
+      if (state.isSpinning) return;
+      state.isSpinning = true;
+      btnSpinWheel.disabled = true;
+      categoryPickedBanner.classList.add('opacity-0');
+
+      // Random revolutions + target angle
+      const spinTimeTotal = 3600; // ms
+      const startAngle = wheelAngle;
+      const extraRotations = 5 + Math.random() * 3;
+      const targetAngle = startAngle + extraRotations * 2 * Math.PI;
+      const startTime = performance.now();
+      let lastTickAngle = wheelAngle;
+
+      function animateSpin(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / spinTimeTotal, 1);
+
+        // Cubic ease out
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        wheelAngle = startAngle + (targetAngle - startAngle) * easeOut;
+
+        // Play tick sound when passing wedges
+        if (Math.abs(wheelAngle - lastTickAngle) > arcSize) {
+          playSound('spin');
+          lastTickAngle = wheelAngle;
+        }
+
+        drawRouletteWheel();
+
+        if (progress < 1) {
+          requestAnimationFrame(animateSpin);
+        } else {
+          // Finished spinning
+          state.isSpinning = false;
+          btnSpinWheel.disabled = false;
+          wheelAngle = wheelAngle % (2 * Math.PI);
+          
+          // Determine winning category
+          // Pointer is at the top: angle 3*PI/2 (or -PI/2)
+          const pointerAngle = (3 * Math.PI / 2);
+          let relativeAngle = (pointerAngle - wheelAngle) % (2 * Math.PI);
+          if (relativeAngle < 0) relativeAngle += 2 * Math.PI;
+
+          const selectedIndex = Math.floor(relativeAngle / arcSize) % numSlices;
+          const chosenCategory = CATEGORIES[selectedIndex];
+          state.selectedCategory = chosenCategory;
+
+          // Announce selected category
+          pickedIcon.textContent = chosenCategory.emoji;
+          pickedName.textContent = chosenCategory.name;
+          categoryPickedBanner.classList.remove('opacity-0');
+          playSound('coin');
+
+          // Transition to question after short suspense
+          setTimeout(() => {
+            loadQuestionForCategory(chosenCategory);
+          }, 1400);
+        }
+      }
+
+      requestAnimationFrame(animateSpin);
+    }
+
+    function loadQuestionForCategory(category) {
+      // Pick active questions pool according to difficulty setting
+      const currentBank = state.difficulty === 'facil' ? QUESTIONS_EASY : QUESTIONS_DB;
+      
+      let availableQuestions = currentBank.map((q, idx) => ({ ...q, originalIndex: idx }));
+      
+      if (category.id !== 'bonus') {
+        const filtered = availableQuestions.filter(q => q.category === category.id);
+        if (filtered.length > 0) availableQuestions = filtered;
+      }
+
+      // Filter out recently used ones
+      const unused = availableQuestions.filter(q => !state.usedQuestionIndices.includes(q.originalIndex));
+      const pool = unused.length > 0 ? unused : availableQuestions;
+
+      const selected = pool[Math.floor(Math.random() * pool.length)];
+      state.currentQuestion = selected;
+      state.usedQuestionIndices.push(selected.originalIndex);
+
+      displayQuestionScreen(selected, category);
+    }
+
+    function displayQuestionScreen(qData, category) {
+      showScreen('question');
+      state.questionAnswered = false;
+
+      // Update Category Badges
+      qCategoryTitle.textContent = category.name;
+      qCategoryIcon.className = `fa-solid ${category.icon}`;
+      qCategoryPill.style.backgroundColor = category.color;
+
+      // Reset Mascot dialog
+      qMascotDialog.textContent = state.difficulty === 'facil' 
+        ? '¡Tú puedes! Elige el animal o respuesta correcta.' 
+        : '¡Analiza con calma! ¿Cuál es la opción correcta?';
+      document.getElementById('q-mini-mascot').classList.remove('anim-mascot-cheer', 'anim-mascot-sad');
+
+      // Set Question
+      qText.textContent = qData.question;
+
+      // Render Options
+      optionsContainer.innerHTML = '';
+      const letters = ['A', 'B', 'C', 'D'];
+
+      qData.options.forEach((optText, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn w-full p-3.5 rounded-2xl text-left font-bold text-slate-700 bg-slate-50 hover:bg-indigo-50 border-2 border-slate-200 hover:border-indigo-400 flex items-center gap-3 shadow-sm transition';
+        btn.setAttribute('data-index', i);
+        btn.innerHTML = `
+          <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-game font-black text-sm shrink-0">${letters[i]}</span>
+          <span class="option-text flex-1 text-sm sm:text-base">${optText}</span>
+        `;
+        btn.addEventListener('click', () => handleAnswer(i, btn));
+        optionsContainer.appendChild(btn);
+      });
+
+      // Hide extra panels
+      explanationBox.classList.add('hidden');
+      nextActionContainer.classList.add('hidden');
+
+      // Start Countdown (20s on easy for relaxed play)
+      startQuestionTimer();
+    }
+
+    function startQuestionTimer() {
+      clearInterval(state.timerInterval);
+      const totalTime = state.difficulty === 'facil' ? 20 : 15;
+      state.timeLeft = totalTime;
+      qTimerText.textContent = `${state.timeLeft}s`;
+      qTimerBar.style.width = '100%';
+      qTimerBar.className = 'h-full bg-gradient-to-r from-emerald-400 via-yellow-400 to-rose-500 rounded-full transition-all duration-1000 w-full';
+
+      state.timerInterval = setInterval(() => {
+        state.timeLeft--;
+        qTimerText.textContent = `${state.timeLeft}s`;
+        const percentage = (state.timeLeft / totalTime) * 100;
+        qTimerBar.style.width = `${Math.max(percentage, 0)}%`;
+
+        if (state.timeLeft <= 5) {
+          playSound('tick');
+          qTimerBar.className = 'h-full bg-rose-500 rounded-full transition-all duration-1000 animate-pulse';
+        }
+
+        if (state.timeLeft <= 0) {
+          clearInterval(state.timerInterval);
+          handleTimeUp();
+        }
+      }, 1000);
+    }
+
+    function handleAnswer(selectedIndex, clickedBtn) {
+      if (state.questionAnswered) return;
+      state.questionAnswered = true;
+      clearInterval(state.timerInterval);
+
+      const q = state.currentQuestion;
+      const isCorrect = (selectedIndex === q.answer);
+      const allButtons = optionsContainer.querySelectorAll('.option-btn');
+
+      // Disable buttons
+      allButtons.forEach(btn => btn.disabled = true);
+
+      // Check correctness
+      if (isCorrect) {
+        // Success styling
+        clickedBtn.classList.remove('bg-slate-50', 'border-slate-200');
+        clickedBtn.classList.add('bg-emerald-100', 'border-emerald-500', 'text-emerald-950');
+        
+        // Stats & Rewards
+        state.score += 100 + (state.streak * 20);
+        state.coins += 25;
+        state.streak++;
+        state.correctCount++;
+        state.totalAnswered++;
+        if (state.streak > state.bestStreak) state.bestStreak = state.streak;
+
+        playSound('correct');
+        launchCelebrationConfetti();
+
+        // Mascot cheer
+        qMascotDialog.textContent = '¡Excelente respuesta! ¡Conocimiento puro!';
+        document.getElementById('q-mini-mascot').classList.add('anim-mascot-cheer');
+
+      } else {
+        // Failure styling
+        if (clickedBtn) {
+          clickedBtn.classList.remove('bg-slate-50', 'border-slate-200');
+          clickedBtn.classList.add('bg-rose-100', 'border-rose-500', 'text-rose-950');
+        }
+
+        // Highlight correct option
+        const correctBtn = allButtons[q.answer];
+        if (correctBtn) {
+          correctBtn.classList.add('bg-emerald-100', 'border-emerald-500', 'text-emerald-950');
+        }
+
+        state.streak = 0;
+        state.totalAnswered++;
+        playSound('wrong');
+
+        // Mascot sorrow
+        qMascotDialog.textContent = '¡Oh, no! Pero no te rindas, ¡así se aprende!';
+        document.getElementById('q-mini-mascot').classList.add('anim-mascot-sad');
+      }
+
+      // Update HUD
+      updateHUD();
+
+      // Show Fact Explanation & Next button
+      explanationText.textContent = q.fact;
+      explanationBox.classList.remove('hidden');
+      nextActionContainer.classList.remove('hidden');
+    }
+
+    function handleTimeUp() {
+      if (state.questionAnswered) return;
+      showToast('¡Tiempo agotado!', 'fa-hourglass-end');
+      handleAnswer(-1, null);
+    }
+
+    document.getElementById('powerup-5050').addEventListener('click', () => {
+      if (state.questionAnswered) return;
+      if (state.coins < 50) {
+        showToast('¡Necesitas al menos 50 monedas 🧠!', 'fa-coins');
+        return;
+      }
+
+      state.coins -= 50;
+      updateHUD();
+      playSound('coin');
+
+      const q = state.currentQuestion;
+      const allButtons = Array.from(optionsContainer.querySelectorAll('.option-btn'));
+      
+      // Find incorrect options
+      const incorrectBtns = allButtons.filter((btn, idx) => idx !== q.answer);
+      // Randomly hide 2
+      incorrectBtns.sort(() => 0.5 - Math.random());
+      incorrectBtns.slice(0, 2).forEach(btn => {
+        btn.style.opacity = '0.25';
+        btn.disabled = true;
+      });
+
+      showToast('¡Dos opciones incorrectas descartadas!', 'fa-scissors');
+      document.getElementById('powerup-5050').disabled = true;
+    });
+
+    document.getElementById('powerup-time').addEventListener('click', () => {
+      if (state.questionAnswered) return;
+      if (state.coins < 30) {
+        showToast('¡Necesitas al menos 30 monedas 🧠!', 'fa-coins');
+        return;
+      }
+
+      state.coins -= 30;
+      state.timeLeft += 10;
+      qTimerText.textContent = `${state.timeLeft}s`;
+      updateHUD();
+      playSound('coin');
+      showToast('+10 segundos adicionales', 'fa-clock');
+    });
+
+    document.getElementById('powerup-skip').addEventListener('click', () => {
+      if (state.questionAnswered) return;
+      if (state.coins < 60) {
+        showToast('¡Necesitas al menos 60 monedas 🧠!', 'fa-coins');
+        return;
+      }
+
+      state.coins -= 60;
+      updateHUD();
+      playSound('coin');
+      clearInterval(state.timerInterval);
+      showToast('¡Pregunta saltada sin penalización!', 'fa-forward');
+
+      // Spin or get new question
+      setTimeout(() => {
+        showScreen('wheel');
+      }, 500);
+    });
+
+    function launchCelebrationConfetti() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.7 },
+          colors: ['#fde047', '#22c55e', '#38bdf8', '#a855f7']
+        });
+      }
+    }
+
+    // Update HUD counters
+    function updateHUD() {
+      hudCoins.textContent = state.coins;
+      hudScore.textContent = state.score;
+      hudStreak.textContent = state.streak;
+    }
+
+    // Non-blocking toast notification
+    function showToast(msg, icon = 'fa-circle-info') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-msg');
+      const toastIcon = document.getElementById('toast-icon');
+
+      toastMsg.textContent = msg;
+      toastIcon.className = `fa-solid ${icon} text-yellow-400`;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2600);
+    }
+
+    function showScreen(screenName) {
+      screenWelcome.classList.add('hidden');
+      screenWheel.classList.add('hidden');
+      screenQuestion.classList.add('hidden');
+      screenSummary.classList.add('hidden');
+
+      if (screenName === 'welcome') {
+        screenWelcome.classList.remove('hidden');
+      } else if (screenName === 'wheel') {
+        screenWheel.classList.remove('hidden');
+        drawRouletteWheel();
+      } else if (screenName === 'question') {
+        screenQuestion.classList.remove('hidden');
+      } else if (screenName === 'summary') {
+        screenSummary.classList.remove('hidden');
+        displaySummary();
+      }
+    }
+
+    function displaySummary() {
+      summaryScore.textContent = state.score;
+      summaryCoins.textContent = `+${state.correctCount * 25}`;
+      summaryAccuracy.textContent = `${state.correctCount}/${state.totalAnswered}`;
+      summaryStreak.textContent = state.bestStreak;
+      playSound('coin');
+      launchCelebrationConfetti();
+    }
+
+    // Button: Start Game
+    document.getElementById('btn-start-game').addEventListener('click', () => {
+      initAudio();
+      playSound('coin');
+      showScreen('wheel');
+    });
+
+    // Button: Spin Roulette Wheel
+    btnSpinWheel.addEventListener('click', () => {
+      initAudio();
+      spinWheel();
+    });
+
+    // Button: Next Question or Summary
+    btnNextQuestion.addEventListener('click', () => {
+      // If user has answered 8+ questions, give them victory summary or continue
+      if (state.totalAnswered >= 10) {
+        showScreen('summary');
+      } else {
+        showScreen('wheel');
+      }
+    });
+
+    // Button: Restart Game
+    document.getElementById('btn-restart-game').addEventListener('click', () => {
+      state.score = 0;
+      state.streak = 0;
+      state.correctCount = 0;
+      state.totalAnswered = 0;
+      state.usedQuestionIndices = [];
+      updateHUD();
+      showScreen('welcome');
+    });
+
+    // Toggle Sound
+    btnToggleSound.addEventListener('click', () => {
+      state.soundEnabled = !state.soundEnabled;
+      if (state.soundEnabled) {
+        soundIcon.className = 'fa-solid fa-volume-high text-slate-700';
+        showToast('Sonido activado', 'fa-volume-high');
+        initAudio();
+      } else {
+        soundIcon.className = 'fa-solid fa-volume-xmark text-rose-500';
+        showToast('Sonido silenciado', 'fa-volume-xmark');
+      }
+    });
+
+    // Interactive Mascot click reaction
+    document.getElementById('mascot-willy').addEventListener('click', () => {
+      playSound('coin');
+      launchCelebrationConfetti();
+      showToast('¡Hola! ¡Soy Willy! ¡Gira mi rueda para jugar!', 'fa-face-smile');
+    });
+
+    // Window load & responsive canvas setup
+    window.onload = function() {
+      drawRouletteWheel();
+      updateHUD();
+    };
+
+    window.addEventListener('resize', () => {
+      drawRouletteWheel();
+    });
+  </script>
+
+</body>
+</html>
