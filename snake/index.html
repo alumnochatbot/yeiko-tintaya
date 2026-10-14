@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Banquete de la Serpiente Negra</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Playfair+Display:ital,wght@0,700;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            background: radial-gradient(circle at 50% 20%, #2c221a 0%, #15110e 65%, #0b0907 100%);
+        }
+
+        .serif-title {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Rustic Wood Table Pattern with deep grain and warm vignette */
+        .wood-board {
+            background-color: #3b281d;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(255, 230, 190, 0.08) 0%, rgba(10, 6, 4, 0.45) 85%),
+                repeating-linear-gradient(90deg, rgba(30, 18, 12, 0.55) 0px, rgba(30, 18, 12, 0.55) 2px, transparent 2px, transparent 28px),
+                repeating-linear-gradient(0deg, rgba(18, 10, 6, 0.6) 0px, rgba(18, 10, 6, 0.6) 4px, transparent 4px, transparent 48px);
+            box-shadow: 
+                inset 0 0 55px rgba(0, 0, 0, 0.85),
+                0 20px 40px -10px rgba(0, 0, 0, 0.8),
+                0 0 0 5px #553a27,
+                0 0 0 9px #251810,
+                0 0 25px rgba(245, 158, 11, 0.15);
+        }
+
+        /* Decorative Fruit Garland Frame (Inspired by the Photo) */
+        .fruit-garland-item {
+            filter: drop-shadow(0 6px 6px rgba(0,0,0,0.6));
+            transition: transform 0.25s ease-out;
+            pointer-events: none;
+        }
+        .fruit-garland-item:hover {
+            transform: scale(1.15) rotate(6deg);
+        }
+
+        /* Glistening sparkle animation */
+        @keyframes glint {
+            0%, 100% { opacity: 0.3; transform: scale(0.85); }
+            50% { opacity: 1; transform: scale(1.15); }
+        }
+        .glint-sparkle {
+            animation: glint 2.4s infinite ease-in-out;
+        }
+
+        /* Glassmorphism containers */
+        .glass-panel {
+            background: rgba(30, 24, 20, 0.78);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 235, 200, 0.09);
+        }
+
+        /* D-Pad Buttons styling */
+        .dpad-btn {
+            background: linear-gradient(145deg, #2f2723, #1e1916);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            transition: all 0.1s ease;
+        }
+        .dpad-btn:active {
+            transform: scale(0.92);
+            background: linear-gradient(145deg, #1b1614, #27201d);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Smooth animated gradient border */
+        @keyframes subtle-pulse {
+            0%, 100% { opacity: 0.85; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.02); }
+        }
+        .pulse-subtle {
+            animation: subtle-pulse 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-amber-50 flex flex-col justify-between items-center p-2 sm:p-4 overflow-x-hidden">
+
+    <header class="w-full max-w-lg flex flex-col items-center gap-2 pt-1 pb-2">
+        <div class="flex items-center justify-between w-full px-2">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-neutral-800 to-black border border-neutral-600 flex items-center justify-center shadow-lg">
+                    <span class="text-xl">🐍</span>
+                </div>
+                <div>
+                    <h1 class="serif-title text-xl sm:text-2xl font-bold tracking-wide text-amber-200 drop-shadow">
+                        Serpiente Negra
+                    </h1>
+                    <p class="text-xs text-amber-300/70">Banquete Silvestre de Frutas</p>
+                </div>
+            </div>
+
+            <!-- Header Controls: Sound & Info -->
+            <div class="flex items-center gap-2">
+                <button id="btn-sound" class="w-9 h-9 rounded-xl glass-panel flex items-center justify-center text-amber-200 hover:text-white transition active:scale-95" title="Sonido">
+                    <i class="fa-solid fa-volume-high text-sm" id="icon-sound"></i>
+                </button>
+                <button id="btn-info" class="w-9 h-9 rounded-xl glass-panel flex items-center justify-center text-amber-200 hover:text-white transition active:scale-95" title="Guía de Frutas">
+                    <i class="fa-solid fa-circle-info text-sm"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="w-full grid grid-cols-3 gap-2 px-1">
+            <div class="glass-panel py-1.5 px-3 rounded-2xl flex flex-col items-center">
+                <span class="text-[10px] uppercase font-bold tracking-wider text-amber-400/80">Puntaje</span>
+                <span id="score-display" class="text-xl font-extrabold text-amber-100">0</span>
+            </div>
+            <div class="glass-panel py-1.5 px-3 rounded-2xl flex flex-col items-center">
+                <span class="text-[10px] uppercase font-bold tracking-wider text-amber-400/80">Récord</span>
+                <span id="high-score-display" class="text-xl font-extrabold text-yellow-400">0</span>
+            </div>
+            <div class="glass-panel py-1.5 px-3 rounded-2xl flex flex-col items-center relative overflow-hidden">
+                <span class="text-[10px] uppercase font-bold tracking-wider text-amber-400/80">Combo</span>
+                <span id="combo-display" class="text-xl font-extrabold text-emerald-400">x1</span>
+                <div id="combo-bar" class="absolute bottom-0 left-0 h-1 bg-emerald-400 w-0 transition-all duration-100"></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="w-full max-w-lg flex flex-col items-center justify-center relative my-auto">
+        <!-- Decorative Ambient Fruit Garland framing the table (photo inspired) -->
+        <div class="w-full flex justify-between items-center px-4 -mb-3 z-10 pointer-events-none select-none text-xl sm:text-2xl opacity-95">
+            <span class="fruit-garland-item">🍇</span>
+            <span class="fruit-garland-item transform -rotate-12">🍓</span>
+            <span class="fruit-garland-item">🍊</span>
+            <span class="fruit-garland-item transform rotate-12">🥝</span>
+            <span class="fruit-garland-item">🫐</span>
+            <span class="fruit-garland-item transform -rotate-6">🍒</span>
+            <span class="fruit-garland-item">🍇</span>
+        </div>
+
+        <!-- Canvas wrapper with rustic board appearance -->
+        <div class="relative w-full aspect-square max-h-[64vh] rounded-3xl p-2.5 wood-board flex items-center justify-center overflow-hidden border border-amber-900/60 shadow-2xl">
+            <!-- Decorative corner leaf badges -->
+            <div class="absolute -top-1 -left-1 text-emerald-600/70 text-lg pointer-events-none z-10">🌿</div>
+            <div class="absolute -top-1 -right-1 text-emerald-600/70 text-lg pointer-events-none z-10 transform scale-x-[-1]">🌿</div>
+            <div class="absolute -bottom-1 -left-1 text-emerald-600/70 text-lg pointer-events-none z-10 transform scale-y-[-1]">🌿</div>
+            <div class="absolute -bottom-1 -right-1 text-emerald-600/70 text-lg pointer-events-none z-10 transform scale-[-1]">🌿</div>
+
+            <canvas id="game-canvas" class="w-full h-full rounded-2xl shadow-inner bg-[#241710]/90 block"></canvas>
+
+            <div id="start-overlay" class="absolute inset-0 bg-black/75 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center p-6 text-center z-20">
+                <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-neutral-900 via-neutral-800 to-amber-700/40 border-2 border-amber-500/40 flex items-center justify-center shadow-xl mb-3 pulse-subtle">
+                    <span class="text-3xl">🐍</span>
+                </div>
+                <h2 class="serif-title text-2xl sm:text-3xl font-bold text-amber-100 mb-1">
+                    El Banquete
+                </h2>
+                <p class="text-xs sm:text-sm text-amber-200/80 max-w-xs mb-5">
+                    Guía a la majestuosa serpiente de escamas de obsidiana por la mesa de frutas frescas. ¡Come sin morderte ni chocar los bordes!
+                </p>
+
+                <!-- Difficulty selection -->
+                <div class="flex items-center gap-1.5 mb-5 bg-neutral-900/80 p-1 rounded-2xl border border-amber-900/50">
+                    <button class="diff-btn px-3 py-1 rounded-xl text-xs font-semibold text-neutral-300 transition" data-speed="140">Tranquilo</button>
+                    <button class="diff-btn px-3 py-1 rounded-xl text-xs font-semibold bg-amber-600 text-white shadow transition" data-speed="100">Clásico</button>
+                    <button class="diff-btn px-3 py-1 rounded-xl text-xs font-semibold text-neutral-300 transition" data-speed="70">Furia</button>
+                </div>
+
+                <button id="btn-start" class="px-7 py-3 rounded-2xl font-bold text-base text-amber-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-lg shadow-amber-950 hover:brightness-110 active:scale-95 transition flex items-center gap-2">
+                    <i class="fa-solid fa-play"></i> Iniciar Juego
+                </button>
+
+                <div class="flex items-center gap-2 mt-4 text-[11px] text-amber-300/60">
+                    <span>Usa las flechas, WASD o desliza en pantalla</span>
+                </div>
+            </div>
+
+            <div id="gameover-overlay" class="absolute inset-0 bg-black/85 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center p-6 text-center z-20 hidden">
+                <div class="w-16 h-16 rounded-full bg-red-950/80 border-2 border-red-500/50 flex items-center justify-center shadow-xl mb-2 text-2xl">
+                    💀
+                </div>
+                <h2 class="serif-title text-2xl font-bold text-red-200 mb-1">¡Fin del Banquete!</h2>
+                <p id="gameover-reason" class="text-xs text-amber-200/70 mb-4">La serpiente colisionó</p>
+
+                <div class="glass-panel w-full max-w-xs rounded-2xl p-3 mb-5 grid grid-cols-2 gap-3 text-center">
+                    <div>
+                        <span class="text-[10px] uppercase tracking-wide text-neutral-400">Puntaje Final</span>
+                        <p id="final-score" class="text-2xl font-bold text-amber-200">0</p>
+                    </div>
+                    <div>
+                        <span class="text-[10px] uppercase tracking-wide text-neutral-400">Frutas Comidas</span>
+                        <p id="final-fruits" class="text-2xl font-bold text-emerald-400">0</p>
+                    </div>
+                </div>
+
+                <button id="btn-restart" class="px-7 py-3 rounded-2xl font-bold text-base text-amber-950 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 shadow-lg shadow-amber-950 hover:brightness-110 active:scale-95 transition flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> Jugar de Nuevo
+                </button>
+            </div>
+
+            <div id="pause-overlay" class="absolute inset-0 bg-black/60 backdrop-blur-sm rounded-3xl flex flex-col items-center justify-center p-6 text-center z-10 hidden">
+                <span class="text-4xl mb-2">⏸️</span>
+                <h3 class="serif-title text-2xl font-bold text-amber-100 mb-2">Juego en Pausa</h3>
+                <p class="text-xs text-amber-300/70 mb-4">Presiona espacio o el botón para reanudar</p>
+                <button id="btn-resume" class="px-5 py-2 rounded-xl text-sm font-semibold bg-amber-500 text-neutral-950 hover:bg-amber-400 active:scale-95 transition">
+                    Reanudar
+                </button>
+            </div>
+
+            <!-- Floating score popups will appear over canvas -->
+            <div id="floating-scores-container" class="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl z-10"></div>
+        </div>
+
+        <!-- Bottom Garland row -->
+        <div class="w-full flex justify-between items-center px-4 -mt-3 z-10 pointer-events-none select-none text-xl sm:text-2xl opacity-95">
+            <span class="fruit-garland-item transform rotate-6">🥝</span>
+            <span class="fruit-garland-item">🫐</span>
+            <span class="fruit-garland-item transform -rotate-12">🍓</span>
+            <span class="fruit-garland-item">🍌</span>
+            <span class="fruit-garland-item transform rotate-12">🍊</span>
+            <span class="fruit-garland-item">🫐</span>
+            <span class="fruit-garland-item transform -rotate-6">🍇</span>
+        </div>
+    </main>
+
+    <footer class="w-full max-w-lg flex flex-col items-center pb-2 pt-1 gap-2">
+        <!-- Virtual D-Pad for Mobile / Touch screens -->
+        <div class="grid grid-cols-3 gap-2 w-48 sm:w-52 select-none">
+            <div></div>
+            <button id="ctrl-up" class="dpad-btn h-12 rounded-2xl flex items-center justify-center text-amber-200 hover:text-white" aria-label="Arriba">
+                <i class="fa-solid fa-chevron-up text-lg"></i>
+            </button>
+            <div></div>
+
+            <button id="ctrl-left" class="dpad-btn h-12 rounded-2xl flex items-center justify-center text-amber-200 hover:text-white" aria-label="Izquierda">
+                <i class="fa-solid fa-chevron-left text-lg"></i>
+            </button>
+            <button id="ctrl-pause" class="dpad-btn h-12 rounded-2xl flex items-center justify-center text-amber-400 hover:text-amber-200" aria-label="Pausa">
+                <i class="fa-solid fa-pause text-base" id="icon-pause-btn"></i>
+            </button>
+            <button id="ctrl-right" class="dpad-btn h-12 rounded-2xl flex items-center justify-center text-amber-200 hover:text-white" aria-label="Derecha">
+                <i class="fa-solid fa-chevron-right text-lg"></i>
+            </button>
+
+            <div></div>
+            <button id="ctrl-down" class="dpad-btn h-12 rounded-2xl flex items-center justify-center text-amber-200 hover:text-white" aria-label="Abajo">
+                <i class="fa-solid fa-chevron-down text-lg"></i>
+            </button>
+            <div></div>
+        </div>
+    </footer>
+
+    <div id="modal-info" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel w-full max-w-sm rounded-3xl p-5 border border-amber-600/30 flex flex-col max-h-[85vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-3 border-b border-amber-500/20 mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">🍇</span>
+                    <h3 class="serif-title font-bold text-lg text-amber-200">Frutas del Banquete</h3>
+                </div>
+                <button id="btn-close-info" class="w-8 h-8 rounded-full bg-neutral-800 text-neutral-300 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <p class="text-xs text-amber-200/80 mb-3">Cada fruta de la mesa otorga diferentes puntos y efectos al devorarla:</p>
+            
+            <div class="flex flex-col gap-2 text-xs">
+                <div class="flex items-center justify-between bg-black/40 p-2 rounded-xl">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg">🍓</span>
+                        <span class="font-medium text-amber-100">Fresa Silvestre</span>
+                    </div>
+                    <span class="font-bold text-amber-400">+10 pts</span>
+                </div>
+                <div class="flex items-center justify-between bg-black/40 p-2 rounded-xl">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg">🫐</span>
+                        <span class="font-medium text-amber-100">Arándano Azul</span>
+                    </div>
+                    <span class="font-bold text-sky-400">+15 pts</span>
+                </div>
+                <div class="flex items-center justify-between bg-black/40 p-2 rounded-xl">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg">🍇</span>
+                        <span class="font-medium text-amber-100">Uvas Negras</span>
+                    </div>
+                    <span class="font-bold text-purple-400">+20 pts</span>
+                </div>
+                <div class="flex items-center justify-between bg-black/40 p-2 rounded-xl">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg">🥝</span>
+                        <span class="font-medium text-amber-100">Rodaja de Kiwi</span>
+                    </div>
+                    <span class="font-bold text-lime-400">+25 pts</span>
+                </div>
+                <div class="flex items-center justify-between bg-black/40 p-2 rounded-xl">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg">🍊</span>
+                        <span class="font-medium text-amber-100">Media Naranja</span>
+                    </div>
+                    <span class="font-bold text-orange-400">+35 pts</span>
+                </div>
+                <div class="flex items-center justify-between bg-black/40 p-2 rounded-xl">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg">🍌</span>
+                        <span class="font-medium text-amber-100">Plátano Dorado</span>
+                    </div>
+                    <span class="font-bold text-yellow-300">+45 pts</span>
+                </div>
+                <div class="flex items-center justify-between bg-gradient-to-r from-red-950/60 to-amber-950/60 border border-yellow-500/30 p-2 rounded-xl">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg">🍒</span>
+                        <span class="font-bold text-yellow-200">Cerezas Gemas</span>
+                    </div>
+                    <span class="font-black text-yellow-300">+60 pts (Especial)</span>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-amber-500/20 text-[11px] text-amber-300/60 leading-relaxed">
+                💡 <strong>Consejo del banquete:</strong> Devora frutas seguidas antes de que baje la barra verde para encadenar combos y multiplicar tu puntuación hasta x5.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* Procedural Web Audio API sound effects */
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playEatSound(fruitType) {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                // Crisp juicy fruit pluck sound
+                osc.type = fruitType.special ? 'triangle' : 'sine';
+                const baseFreq = fruitType.special ? 587.33 : 329.63 + Math.random() * 80;
+                osc.frequency.setValueAtTime(baseFreq, now);
+                osc.frequency.exponentialRampToValueAtTime(baseFreq * 2.2, now + 0.12);
+
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.15);
+
+                // If special cherry, play secondary harmony bell
+                if (fruitType.special) {
+                    const bell = this.ctx.createOscillator();
+                    const bellGain = this.ctx.createGain();
+                    bell.type = 'sine';
+                    bell.frequency.setValueAtTime(880, now + 0.05);
+                    bell.frequency.exponentialRampToValueAtTime(1174.66, now + 0.25);
+
+                    bellGain.gain.setValueAtTime(0.2, now + 0.05);
+                    bellGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+                    bell.connect(bellGain);
+                    bellGain.connect(this.ctx.destination);
+                    bell.start(now + 0.05);
+                    bell.stop(now + 0.32);
+                }
+            }
+
+            playGameOver() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.exponentialRampToValueAtTime(45, now + 0.5);
+
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.55);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.56);
+            }
+
+            playTurn() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(160, now);
+                gain.gain.setValueAtTime(0.04, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            }
+        }
+
+        const sound = new SoundFX();
+
+        const FRUITS_LIB = [
+            { icon: '🍓', name: 'Fresa', points: 10, color: '#ef4444', weight: 35 },
+            { icon: '🫐', name: 'Arándano', points: 15, color: '#38bdf8', weight: 25 },
+            { icon: '🍇', name: 'Uva', points: 20, color: '#c084fc', weight: 20 },
+            { icon: '🥝', name: 'Kiwi', points: 25, color: '#a3e635', weight: 15 },
+            { icon: '🍊', name: 'Naranja', points: 35, color: '#fb923c', weight: 10 },
+            { icon: '🍌', name: 'Plátano', points: 45, color: '#facc15', weight: 8 },
+            { icon: '🍒', name: 'Cereza', points: 60, color: '#f43f5e', weight: 4, special: true }
+        ];
+
+        /* Pick a weighted random fruit */
+        function getRandomFruit() {
+            const totalWeight = FRUITS_LIB.reduce((acc, f) => acc + f.weight, 0);
+            let rand = Math.random() * totalWeight;
+            for (const fruit of FRUITS_LIB) {
+                if (rand < fruit.weight) return fruit;
+                rand -= fruit.weight;
+            }
+            return FRUITS_LIB[0];
+        }
+
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const floatingContainer = document.getElementById('floating-scores-container');
+
+        const GRID_CELLS = 22; // 22 x 22 grid
+        let cellSize = 20;
+
+        let snake = [];
+        let direction = { x: 1, y: 0 };
+        let nextDirection = { x: 1, y: 0 };
+        let currentFruit = null;
+        let fruitPos = { x: 10, y: 10 };
+        let score = 0;
+        let fruitsEatenCount = 0;
+        let highScore = parseInt(localStorage.getItem('snake_banquet_highscore') || '0', 10);
+        let combo = 1;
+        let comboTimer = null;
+        let comboProgress = 0;
+
+        let gameSpeed = 100; // ms per tick
+        let gameLoopTimer = null;
+        let isRunning = false;
+        let isPaused = false;
+        let tonguePhase = 0;
+        let particles = [];
+
+        // DOM elements
+        const scoreDisplay = document.getElementById('score-display');
+        const highScoreDisplay = document.getElementById('high-score-display');
+        const comboDisplay = document.getElementById('combo-display');
+        const comboBar = document.getElementById('combo-bar');
+        const startOverlay = document.getElementById('start-overlay');
+        const gameoverOverlay = document.getElementById('gameover-overlay');
+        const pauseOverlay = document.getElementById('pause-overlay');
+        const finalScoreEl = document.getElementById('final-score');
+        const finalFruitsEl = document.getElementById('final-fruits');
+        const gameoverReasonEl = document.getElementById('gameover-reason');
+
+        highScoreDisplay.textContent = highScore;
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.resetTransform?.();
+            ctx.scale(dpr, dpr);
+            cellSize = rect.width / GRID_CELLS;
+            if (!isRunning) {
+                render();
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function resetGame() {
+            const startX = Math.floor(GRID_CELLS / 4);
+            const startY = Math.floor(GRID_CELLS / 2);
+            snake = [
+                { x: startX, y: startY },
+                { x: startX - 1, y: startY },
+                { x: startX - 2, y: startY },
+                { x: startX - 3, y: startY }
+            ];
+            direction = { x: 1, y: 0 };
+            nextDirection = { x: 1, y: 0 };
+            score = 0;
+            fruitsEatenCount = 0;
+            combo = 1;
+            resetComboTimer();
+            particles = [];
+            updateHUD();
+            spawnFruit();
+        }
+
+        function updateHUD() {
+            scoreDisplay.textContent = score;
+            highScoreDisplay.textContent = highScore;
+            comboDisplay.textContent = `x${combo}`;
+            if (combo > 1) {
+                comboDisplay.classList.add('text-yellow-400');
+                comboDisplay.classList.remove('text-emerald-400');
+            } else {
+                comboDisplay.classList.add('text-emerald-400');
+                comboDisplay.classList.remove('text-yellow-400');
+            }
+        }
+
+        /* Spawn food in free cell */
+        function spawnFruit() {
+            currentFruit = getRandomFruit();
+            let valid = false;
+            let attempts = 0;
+            while (!valid && attempts < 200) {
+                fruitPos = {
+                    x: Math.floor(Math.random() * GRID_CELLS),
+                    y: Math.floor(Math.random() * GRID_CELLS)
+                };
+                valid = !snake.some(segment => segment.x === fruitPos.x && segment.y === fruitPos.y);
+                attempts++;
+            }
+        }
+
+        function incrementCombo() {
+            combo = Math.min(combo + 1, 5);
+            resetComboTimer();
+        }
+
+        function resetComboTimer() {
+            clearInterval(comboTimer);
+            comboProgress = 100;
+            comboBar.style.width = '100%';
+
+            if (combo > 1) {
+                const stepTime = 35; // Total ~3.5 seconds
+                comboTimer = setInterval(() => {
+                    comboProgress -= 1;
+                    comboBar.style.width = `${Math.max(0, comboProgress)}%`;
+                    if (comboProgress <= 0) {
+                        clearInterval(comboTimer);
+                        combo = 1;
+                        updateHUD();
+                    }
+                }, stepTime);
+            } else {
+                comboBar.style.width = '0%';
+            }
+            updateHUD();
+        }
+
+        function spawnJuiceParticles(x, y, color) {
+            const count = 12;
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 1.2 + Math.random() * 3.5;
+                particles.push({
+                    x: (x + 0.5) * cellSize,
+                    y: (y + 0.5) * cellSize,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: 2 + Math.random() * 3.2,
+                    color: color,
+                    alpha: 1,
+                    decay: 0.025 + Math.random() * 0.03
+                });
+            }
+        }
+
+        function showFloatingScore(x, y, text, color) {
+            const floater = document.createElement('div');
+            floater.className = 'absolute font-black pointer-events-none transition-all duration-700 ease-out text-sm drop-shadow';
+            floater.style.color = color;
+            floater.textContent = text;
+            floater.style.left = `${(x + 0.5) * cellSize}px`;
+            floater.style.top = `${(y + 0.5) * cellSize}px`;
+            floater.style.transform = 'translate(-50%, -50%) scale(0.6)';
+            floatingContainer.appendChild(floater);
+
+            // Animate float and fade
+            requestAnimationFrame(() => {
+                floater.style.transform = 'translate(-50%, -120%) scale(1.15)';
+                floater.style.opacity = '0';
+            });
+
+            setTimeout(() => {
+                floater.remove();
+            }, 750);
+        }
+
+        function tick() {
+            if (!isRunning || isPaused) return;
+
+            direction = { ...nextDirection };
+            const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+
+            // Wall collision check
+            if (head.x < 0 || head.x >= GRID_CELLS || head.y < 0 || head.y >= GRID_CELLS) {
+                gameOver("La serpiente chocó contra el borde");
+                return;
+            }
+
+            // Self collision check
+            for (let i = 0; i < snake.length; i++) {
+                if (snake[i].x === head.x && snake[i].y === head.y) {
+                    gameOver("La serpiente se mordió su propia cola");
+                    return;
+                }
+            }
+
+            // Move snake
+            snake.unshift(head);
+
+            // Eat fruit check
+            if (head.x === fruitPos.x && head.y === fruitPos.y) {
+                fruitsEatenCount++;
+                const gained = currentFruit.points * combo;
+                score += gained;
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem('snake_banquet_highscore', highScore);
+                }
+
+                sound.playEatSound(currentFruit);
+                spawnJuiceParticles(fruitPos.x, fruitPos.y, currentFruit.color);
+                showFloatingScore(fruitPos.x, fruitPos.y, `+${gained}${combo > 1 ? ` (x${combo})` : ''}`, currentFruit.color);
+                incrementCombo();
+
+                spawnFruit();
+            } else {
+                snake.pop(); // Remove tail segment
+            }
+
+            tonguePhase = (tonguePhase + 1) % 12;
+            render();
+        }
+
+        function gameOver(reason) {
+            isRunning = false;
+            clearInterval(gameLoopTimer);
+            clearInterval(comboTimer);
+            comboBar.style.width = '0%';
+            sound.playGameOver();
+
+            finalScoreEl.textContent = score;
+            finalFruitsEl.textContent = fruitsEatenCount;
+            gameoverReasonEl.textContent = reason;
+            gameoverOverlay.classList.remove('hidden');
+        }
+
+        function render() {
+            const rect = canvas.getBoundingClientRect();
+            ctx.clearRect(0, 0, rect.width, rect.height);
+
+            // Subtle dark wooden checker grid with wood fiber simulation
+            for (let r = 0; r < GRID_CELLS; r++) {
+                for (let c = 0; c < GRID_CELLS; c++) {
+                    if ((r + c) % 2 === 0) {
+                        ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+                        ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+                    }
+                    // Tiny subtle wood grain pores
+                    if ((r * 7 + c * 13) % 19 === 0) {
+                        ctx.fillStyle = 'rgba(255, 230, 180, 0.025)';
+                        ctx.fillRect(c * cellSize + 2, r * cellSize + 2, cellSize - 4, 1.5);
+                    }
+                }
+            }
+
+            // Render Fruit with glowing aura and dew sparkle
+            if (currentFruit) {
+                const fx = (fruitPos.x + 0.5) * cellSize;
+                const fy = (fruitPos.y + 0.5) * cellSize;
+
+                // Glowing ambient halo
+                const radGlow = ctx.createRadialGradient(fx, fy, 2, fx, fy, cellSize * 1.1);
+                radGlow.addColorStop(0, currentFruit.color + '77');
+                radGlow.addColorStop(0.5, currentFruit.color + '25');
+                radGlow.addColorStop(1, 'transparent');
+                ctx.fillStyle = radGlow;
+                ctx.beginPath();
+                ctx.arc(fx, fy, cellSize * 1.1, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw fruit emoji with soft shadow
+                ctx.save();
+                ctx.font = `${Math.floor(cellSize * 0.95)}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = 'rgba(0,0,0,0.65)';
+                ctx.shadowBlur = 8;
+                ctx.fillText(currentFruit.icon, fx, fy + 1);
+
+                // Sparkling dew drop decoration on top of the fruit
+                const sparkleTime = Date.now() * 0.003;
+                const sparkleAlpha = 0.5 + 0.5 * Math.sin(sparkleTime);
+                ctx.fillStyle = `rgba(255, 255, 255, ${sparkleAlpha * 0.8})`;
+                ctx.beginPath();
+                ctx.arc(fx - cellSize * 0.22, fy - cellSize * 0.24, 1.8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Render Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= p.decay;
+
+                if (p.alpha <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Render Sleek Obsidian Black Snake (inspired by the photo!)
+            if (snake.length > 0) {
+                // Draw connecting body spline
+                for (let i = snake.length - 1; i >= 0; i--) {
+                    const seg = snake[i];
+                    const cx = (seg.x + 0.5) * cellSize;
+                    const cy = (seg.y + 0.5) * cellSize;
+                    const isHead = (i === 0);
+
+                    // Radius tapers down smoothly toward tail tip
+                    const progress = i / snake.length;
+                    const baseRadius = (cellSize * 0.46) * (1 - progress * 0.38);
+
+                    // Drop shadow underneath each glossy coil
+                    ctx.save();
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+                    ctx.shadowBlur = 7;
+                    ctx.shadowOffsetY = 3;
+
+                    // Obsidian snake gradient with realistic iridescent highlights
+                    const grad = ctx.createRadialGradient(
+                        cx - baseRadius * 0.35, 
+                        cy - baseRadius * 0.35, 
+                        baseRadius * 0.08, 
+                        cx, 
+                        cy, 
+                        baseRadius
+                    );
+                    
+                    if (isHead) {
+                        grad.addColorStop(0, '#757c85');   // Bright top specular shine
+                        grad.addColorStop(0.2, '#353a40');
+                        grad.addColorStop(0.65, '#121417');
+                        grad.addColorStop(1, '#050506');
+                    } else {
+                        grad.addColorStop(0, '#5a6068');   // Silky obsidian body sheen
+                        grad.addColorStop(0.25, '#282b30');
+                        grad.addColorStop(0.7, '#0f1113');
+                        grad.addColorStop(1, '#020203');
+                    }
+
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, baseRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+
+                    // Subtle micro-scale texture line for reptile authenticity
+                    if (!isHead && i % 2 === 0) {
+                        ctx.save();
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.arc(cx, cy - baseRadius * 0.1, baseRadius * 0.65, -0.7, 0.7);
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+
+                    // Head features (Glossy eyes + Flickering red tongue)
+                    if (isHead) {
+                        const angle = Math.atan2(direction.y, direction.x);
+
+                        // Draw eyes
+                        const eyeDist = baseRadius * 0.55;
+                        const eyeOffset = baseRadius * 0.45;
+
+                        const leftEyeX = cx + Math.cos(angle - 0.7) * eyeDist;
+                        const leftEyeY = cy + Math.sin(angle - 0.7) * eyeDist;
+                        const rightEyeX = cx + Math.cos(angle + 0.7) * eyeDist;
+                        const rightEyeY = cy + Math.sin(angle + 0.7) * eyeDist;
+
+                        // Deep jet-black eyes with realistic gloss gleam
+                        [ [leftEyeX, leftEyeY], [rightEyeX, rightEyeY] ].forEach(([ex, ey]) => {
+                            ctx.fillStyle = '#0a0a0c';
+                            ctx.beginPath();
+                            ctx.arc(ex, ey, baseRadius * 0.24, 0, Math.PI * 2);
+                            ctx.fill();
+
+                            // Amber-tinted outer iris ring
+                            ctx.strokeStyle = '#d97706';
+                            ctx.lineWidth = 0.8;
+                            ctx.stroke();
+
+                            // Specular glint
+                            ctx.fillStyle = '#f8fafc';
+                            ctx.beginPath();
+                            ctx.arc(ex - 0.9, ey - 0.9, baseRadius * 0.08, 0, Math.PI * 2);
+                            ctx.fill();
+                        });
+
+                        // Flicking forked tongue animation
+                        if (tonguePhase < 6) {
+                            const tongueLength = baseRadius * (1.1 + (tonguePhase % 3) * 0.2);
+                            const tipX = cx + Math.cos(angle) * (baseRadius + tongueLength);
+                            const tipY = cy + Math.sin(angle) * (baseRadius + tongueLength);
+
+                            const startTongueX = cx + Math.cos(angle) * baseRadius * 0.8;
+                            const startTongueY = cy + Math.sin(angle) * baseRadius * 0.8;
+
+                            ctx.strokeStyle = '#ef4444';
+                            ctx.lineWidth = 1.8;
+                            ctx.lineCap = 'round';
+
+                            // Base stem
+                            ctx.beginPath();
+                            ctx.moveTo(startTongueX, startTongueY);
+                            ctx.lineTo(tipX, tipY);
+                            ctx.stroke();
+
+                            // Fork tips
+                            const forkLen = 4;
+                            const forkAngle = 0.45;
+                            ctx.beginPath();
+                            ctx.moveTo(tipX, tipY);
+                            ctx.lineTo(tipX + Math.cos(angle - forkAngle) * forkLen, tipY + Math.sin(angle - forkAngle) * forkLen);
+                            ctx.moveTo(tipX, tipY);
+                            ctx.lineTo(tipX + Math.cos(angle + forkAngle) * forkLen, tipY + Math.sin(angle + forkAngle) * forkLen);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+        }
+
+        function changeDirection(dx, dy) {
+            // Prevent 180-degree immediate reverse turn
+            if (dx !== 0 && direction.x !== 0) return;
+            if (dy !== 0 && direction.y !== 0) return;
+
+            nextDirection = { x: dx, y: dy };
+            sound.playTurn();
+        }
+
+        // Keyboard inputs
+        window.addEventListener('keydown', (e) => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                e.preventDefault();
+            }
+
+            if (!isRunning && (e.key === ' ' || e.key === 'Enter')) {
+                startGame();
+                return;
+            }
+
+            if (e.key === ' ' || e.key.toLowerCase() === 'p') {
+                togglePause();
+                return;
+            }
+
+            switch (e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    changeDirection(0, -1);
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    changeDirection(0, 1);
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    changeDirection(-1, 0);
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    changeDirection(1, 0);
+                    break;
+            }
+        });
+
+        // Touch & Swipe gestures directly on the canvas
+        let touchStartX = 0;
+        let touchStartY = 0;
+        canvas.parentElement.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, { passive: true });
+
+        canvas.parentElement.addEventListener('touchend', (e) => {
+            const touchEndX = e.changedTouches[0].screenX;
+            const touchEndY = e.changedTouches[0].screenY;
+            const dx = touchEndX - touchStartX;
+            const dy = touchEndY - touchStartY;
+
+            if (Math.hypot(dx, dy) < 25) return; // Ignore slight taps
+
+            if (Math.abs(dx) > Math.abs(dy)) {
+                // Horizontal swipe
+                if (dx > 0) changeDirection(1, 0);
+                else changeDirection(-1, 0);
+            } else {
+                // Vertical swipe
+                if (dy > 0) changeDirection(0, 1);
+                else changeDirection(0, -1);
+            }
+        }, { passive: true });
+
+        document.getElementById('ctrl-up').addEventListener('click', () => changeDirection(0, -1));
+        document.getElementById('ctrl-down').addEventListener('click', () => changeDirection(0, 1));
+        document.getElementById('ctrl-left').addEventListener('click', () => changeDirection(-1, 0));
+        document.getElementById('ctrl-right').addEventListener('click', () => changeDirection(1, 0));
+
+        function togglePause() {
+            if (!isRunning) return;
+            isPaused = !isPaused;
+            const pauseIcon = document.getElementById('icon-pause-btn');
+
+            if (isPaused) {
+                pauseOverlay.classList.remove('hidden');
+                pauseIcon.className = 'fa-solid fa-play text-base';
+            } else {
+                pauseOverlay.classList.add('hidden');
+                pauseIcon.className = 'fa-solid fa-pause text-base';
+            }
+        }
+
+        document.getElementById('ctrl-pause').addEventListener('click', togglePause);
+        document.getElementById('btn-resume').addEventListener('click', togglePause);
+
+        function startGame() {
+            startOverlay.classList.add('hidden');
+            gameoverOverlay.classList.add('hidden');
+            pauseOverlay.classList.add('hidden');
+            isPaused = false;
+            isRunning = true;
+            resetGame();
+            sound.init();
+
+            clearInterval(gameLoopTimer);
+            gameLoopTimer = setInterval(tick, gameSpeed);
+        }
+
+        document.getElementById('btn-start').addEventListener('click', startGame);
+        document.getElementById('btn-restart').addEventListener('click', startGame);
+
+        // Sound Toggle
+        const soundBtn = document.getElementById('btn-sound');
+        const soundIcon = document.getElementById('icon-sound');
+        soundBtn.addEventListener('click', () => {
+            sound.enabled = !sound.enabled;
+            if (sound.enabled) {
+                soundIcon.className = 'fa-solid fa-volume-high text-sm';
+                soundBtn.classList.remove('opacity-50');
+            } else {
+                soundIcon.className = 'fa-solid fa-volume-xmark text-sm';
+                soundBtn.classList.add('opacity-50');
+            }
+        });
+
+        // Difficulty Selector
+        document.querySelectorAll('.diff-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.diff-btn').forEach(b => {
+                    b.classList.remove('bg-amber-600', 'text-white', 'shadow');
+                    b.classList.add('text-neutral-300');
+                });
+                const target = e.currentTarget;
+                target.classList.add('bg-amber-600', 'text-white', 'shadow');
+                target.classList.remove('text-neutral-300');
+                gameSpeed = parseInt(target.getAttribute('data-speed'), 10);
+            });
+        });
+
+        // Fruit Guide Modal
+        const infoModal = document.getElementById('modal-info');
+        document.getElementById('btn-info').addEventListener('click', () => {
+            infoModal.classList.remove('hidden');
+        });
+        document.getElementById('btn-close-info').addEventListener('click', () => {
+            infoModal.classList.add('hidden');
+        });
+        infoModal.addEventListener('click', (e) => {
+            if (e.target === infoModal) infoModal.classList.add('hidden');
+        });
+
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            resetGame();
+            render();
+        });
+    </script>
+</body>
+</html>
