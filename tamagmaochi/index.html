@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mascota Virtual Retro - Edición Clásica</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for retro typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=M+PLUS+Rounded+1c:wght@800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --lcd-bg: #c6cfa2;
+            --lcd-swirl: #aeb88a;
+            --lcd-pixel: #1c2214;
+            --lcd-faint: rgba(28, 34, 20, 0.14);
+            --shell-white: #f7f9fc;
+            --tama-green: #009e49;
+        }
+
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background: radial-gradient(circle at 50% 30%, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%);
+            user-select: none;
+            -webkit-user-select: none;
+            overflow-x: hidden;
+        }
+
+        .pixel-font {
+            font-family: 'Press Start 2P', monospace;
+        }
+
+        /* Realistic Egg Shell 3D Effect */
+        .egg-shell {
+            width: 340px;
+            height: 430px;
+            background: radial-gradient(circle at 35% 25%, #ffffff 0%, #f1f5f9 55%, #cbd5e1 92%, #94a3b8 100%);
+            border-radius: 50% 50% 47% 47% / 58% 58% 42% 42%;
+            box-shadow: 
+                0 28px 50px -12px rgba(15, 23, 42, 0.45),
+                inset -12px -18px 30px rgba(100, 116, 139, 0.45),
+                inset 14px 18px 30px rgba(255, 255, 255, 0.95),
+                0 0 0 2px rgba(203, 213, 225, 0.8);
+            position: relative;
+        }
+
+        /* Classic Jagged Green Bezel */
+        .green-jagged-border {
+            position: absolute;
+            top: 108px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 228px;
+            height: 215px;
+            background: linear-gradient(135deg, #16a34a 0%, #059669 50%, #065f46 100%);
+            clip-path: polygon(
+                50% 0%, 68% 6%, 85% 2%, 94% 18%, 100% 42%, 95% 65%, 
+                98% 85%, 83% 96%, 64% 93%, 50% 100%, 35% 93%, 16% 96%, 
+                2% 84%, 6% 62%, 0% 38%, 8% 16%, 18% 3%, 34% 7%
+            );
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.25));
+        }
+
+        /* Inner Screen Frame */
+        .lcd-bezel {
+            width: 184px;
+            height: 168px;
+            background: #2e3829;
+            border-radius: 16px;
+            padding: 5px;
+            box-shadow: inset 0 4px 8px rgba(0,0,0,0.6);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* LCD Display with classic wavy background pattern */
+        .lcd-screen {
+            width: 100%;
+            height: 100%;
+            background-color: var(--lcd-bg);
+            background-image: 
+                repeating-radial-gradient(
+                    circle at 15% 25%, 
+                    transparent 0, 
+                    transparent 9px, 
+                    rgba(158, 172, 118, 0.35) 10px, 
+                    rgba(158, 172, 118, 0.35) 16px
+                ),
+                linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(180,190,130,0.2) 100%);
+            border-radius: 11px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 3px 7px rgba(0, 0, 0, 0.28);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Night mode overlay when lights are off */
+        .lcd-screen.lights-off {
+            background-color: #27301f;
+            background-image: none;
+        }
+
+        /* Status Bar Icons on Top & Bottom of LCD */
+        .lcd-icon-bar {
+            height: 26px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 6px;
+            background: rgba(165, 178, 128, 0.35);
+            z-index: 10;
+        }
+
+        .lcd-icon {
+            width: 20px;
+            height: 20px;
+            opacity: 0.18;
+            transition: opacity 0.1s ease, transform 0.1s ease;
+            color: var(--lcd-pixel);
+        }
+
+        .lcd-icon.focused {
+            opacity: 1;
+            transform: scale(1.12);
+            filter: drop-shadow(1px 1px 0px rgba(255,255,255,0.4));
+        }
+
+        .lcd-icon.attention-blink {
+            animation: blinkIcon 0.6s infinite steps(2, start);
+        }
+
+        @keyframes blinkIcon {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.15; }
+        }
+
+        /* Tactile Rubber Green Buttons */
+        .tama-btn {
+            width: 34px;
+            height: 27px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #22c55e, #15803d 75%, #052e16 100%);
+            box-shadow: 
+                0 4px 0 #064e3b,
+                0 6px 8px rgba(0, 0, 0, 0.35),
+                inset 0 2px 3px rgba(255, 255, 255, 0.45);
+            border: 2px solid #cbd5e1;
+            transition: all 0.06s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .tama-btn:active, .tama-btn.pressed {
+            transform: translateY(3px);
+            box-shadow: 
+                0 1px 0 #064e3b,
+                0 2px 3px rgba(0, 0, 0, 0.3),
+                inset 0 1px 2px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Classic Japanese Logo Banner */
+        .jp-title {
+            font-weight: 900;
+            color: #009e49;
+            text-shadow: 
+                -1.5px -1.5px 0 #064e3b,  
+                 1.5px -1.5px 0 #064e3b,
+                -1.5px  1.5px 0 #064e3b,
+                 1.5px  1.5px 0 #064e3b,
+                 0px 3px 4px rgba(0,0,0,0.18);
+            letter-spacing: -1px;
+        }
+
+        /* Metal Bead Keychain */
+        .chain-bead {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #ffffff, #94a3b8 55%, #334155 95%);
+            box-shadow: 1px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between py-3 px-4">
+
+    <header class="w-full max-w-md flex items-center justify-between bg-white/80 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-sm border border-sky-100 z-20">
+        <div class="flex items-center gap-2">
+            <span class="inline-block w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+            <h1 class="text-xs sm:text-sm font-black tracking-tight text-slate-800 uppercase">Tamagotchi Gen 1</h1>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="soundToggleBtn" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1 transition active:scale-95" title="Activar/Desactivar Sonido">
+                <span id="soundIcon">🔊</span>
+                <span id="soundText" class="hidden sm:inline">Sonido</span>
+            </button>
+            <button id="speedToggleBtn" class="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition active:scale-95" title="Velocidad del tiempo">
+                ⚡ <span id="speedText">1x</span>
+            </button>
+            <button id="helpModalBtn" class="w-7 h-7 rounded-xl bg-sky-100 hover:bg-sky-200 text-sky-800 font-black text-xs flex items-center justify-center transition active:scale-95" title="Instrucciones">
+                ?
+            </button>
+        </div>
+    </header>
+
+    <main class="flex flex-col items-center justify-center my-auto py-2 relative">
+        
+        <!-- Metal Ball Chain Assembly (Matches reference photo) -->
+        <div class="relative w-32 h-24 -mb-3 flex justify-center items-end pointer-events-none select-none z-0">
+            <!-- Top Clasp -->
+            <div class="absolute top-0 w-12 h-3.5 rounded-sm bg-gradient-to-r from-slate-400 via-white to-slate-500 border border-slate-600 shadow-md"></div>
+            <!-- Left Chain Side -->
+            <div class="absolute left-9 top-3 flex flex-col gap-1.5 items-center transform -rotate-6">
+                <div class="chain-bead"></div>
+                <div class="chain-bead"></div>
+                <div class="chain-bead"></div>
+                <div class="chain-bead"></div>
+                <div class="chain-bead"></div>
+                <div class="chain-bead"></div>
+            </div>
+            <!-- Right Chain Side -->
+            <div class="absolute right-9 top-3 flex flex-col gap-1.5 items-center transform rotate-6">
+                <div class="chain-bead"></div>
+                <div class="chain-bead"></div>
+                <div class="chain-bead"></div>
+                <div class="chain-bead"></div>
+                <div class="chain-bead"></div>
+                <div class="chain-bead"></div>
+            </div>
+        </div>
+
+        <!-- Iconic White Tamagotchi Egg Shell -->
+        <div class="egg-shell flex flex-col items-center z-10">
+            
+            <!-- Keychain Grommet Hole -->
+            <div class="w-7 h-7 rounded-full bg-gradient-to-b from-slate-400 to-slate-200 mt-3 border-2 border-slate-400 shadow-inner flex items-center justify-center relative">
+                <div class="w-3.5 h-3.5 rounded-full bg-sky-200 shadow-inner"></div>
+                <!-- Connecting Jump Ring -->
+                <div class="w-2.5 h-6 rounded-full bg-gradient-to-r from-slate-300 via-white to-slate-500 border border-slate-600 absolute -top-3.5 shadow"></div>
+            </div>
+
+            <!-- Classic Green Japanese Title "たまごっち" -->
+            <div class="mt-2 select-none text-center">
+                <span class="jp-title text-3xl tracking-tighter">たまごっち</span>
+                <span class="text-[10px] font-black text-emerald-800 align-top -ml-1">®</span>
+            </div>
+
+            <!-- Decorative Character Stickers around the shell (Matches reference image) -->
+            <!-- Top Left Blue Character (Maskutchi style) -->
+            <svg class="w-9 h-9 absolute left-5 top-24 transform -rotate-12" viewBox="0 0 36 36">
+                <path d="M10 8 V16 H6 V24 H12 V30 H24 V24 H30 V16 H26 V8 H21 V14 H15 V8 Z" fill="#1d4ed8" stroke="#0f172a" stroke-width="2.2" stroke-linejoin="round"/>
+                <rect x="12" y="17" width="4" height="4" fill="#fff"/>
+                <rect x="20" y="17" width="4" height="4" fill="#fff"/>
+                <path d="M14 24 H22" stroke="#fff" stroke-width="2"/>
+            </svg>
+
+            <!-- Middle Left Plant/Duck Character (Kusatchi style) -->
+            <svg class="w-9 h-10 absolute left-2.5 top-48 transform -rotate-6" viewBox="0 0 36 40">
+                <circle cx="16" cy="14" r="9" fill="#0284c7" stroke="#0f172a" stroke-width="2.2"/>
+                <polygon points="24,12 33,15 24,18" fill="#facc15" stroke="#0f172a" stroke-width="2"/>
+                <circle cx="15" cy="12" r="2" fill="#fff"/>
+                <path d="M16 23 V30" stroke="#15803d" stroke-width="3"/>
+                <polygon points="10,29 24,29 21,37 13,37" fill="#d97706" stroke="#0f172a" stroke-width="2"/>
+            </svg>
+
+            <!-- Bottom Left Red Character -->
+            <svg class="w-9 h-9 absolute left-6 bottom-20 transform rotate-6" viewBox="0 0 36 36">
+                <ellipse cx="18" cy="20" rx="10" ry="8" fill="#ef4444" stroke="#0f172a" stroke-width="2.2"/>
+                <circle cx="14" cy="18" r="2" fill="#fff"/>
+                <circle cx="22" cy="18" r="2" fill="#fff"/>
+                <path d="M12 28 L10 33 M18 28 L18 33 M24 28 L26 33" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+
+            <!-- Top Right Yellow Character (Kuchipatchi / Ginjirotchi style) -->
+            <svg class="w-9 h-9 absolute right-5 top-28 transform rotate-12" viewBox="0 0 36 36">
+                <path d="M8 10 H26 V26 H22 V31 H14 V26 H10 V18 H6 V12 Z" fill="#facc15" stroke="#0f172a" stroke-width="2.2" stroke-linejoin="round"/>
+                <circle cx="15" cy="15" r="2" fill="#0f172a"/>
+                <ellipse cx="20" cy="20" rx="4" ry="2.5" fill="#fb923c" stroke="#0f172a" stroke-width="1.5"/>
+            </svg>
+
+            <!-- Middle Right White/Black Character (Mimitchi style) -->
+            <svg class="w-9 h-10 absolute right-2.5 top-48 transform rotate-6" viewBox="0 0 36 40">
+                <path d="M12 6 L10 16 M22 6 L24 16" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+                <rect x="9" y="15" width="18" height="16" rx="6" fill="#f8fafc" stroke="#0f172a" stroke-width="2.2"/>
+                <circle cx="14" cy="21" r="2" fill="#0f172a"/>
+                <circle cx="22" cy="21" r="2" fill="#0f172a"/>
+            </svg>
+
+            <!-- Bottom Right Red Duck Character -->
+            <svg class="w-9 h-9 absolute right-6 bottom-20 transform -rotate-12" viewBox="0 0 36 36">
+                <path d="M10 14 C10 8, 26 8, 26 16 C26 24, 28 28, 18 28 C10 28, 10 22, 10 14 Z" fill="#ef4444" stroke="#0f172a" stroke-width="2.2"/>
+                <rect x="6" y="15" width="7" height="4" rx="1" fill="#facc15" stroke="#0f172a" stroke-width="1.8"/>
+                <circle cx="17" cy="14" r="2" fill="#0f172a"/>
+            </svg>
+
+            <div class="green-jagged-border">
+                <div class="lcd-bezel">
+                    <div id="lcdScreen" class="lcd-screen">
+                        
+                        <!-- TOP ICON ROW (1: Feed, 2: Light, 3: Play, 4: Medicine) -->
+                        <div class="lcd-icon-bar border-b border-black/10">
+                            <!-- 0: Comida (Fork & Knife) -->
+                            <svg id="icon-0" class="lcd-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M5 2v8h2v12h2V10h2V2H9v5H8V2H7v5H6V2H5zm11 0c-1.7 0-3 1.8-3 4v6h2v10h2V2h-1z"/>
+                            </svg>
+                            <!-- 1: Luz (Lightbulb) -->
+                            <svg id="icon-1" class="lcd-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M11 1h2v3h-2V1zm-7 10H1v2h3v-2zm19 0h-3v2h3v-2zM5.6 4.2L3.5 6.3l1.4 1.4 2.1-2.1-1.4-1.4zm12.8 0l-1.4 1.4 2.1 2.1 1.4-1.4-2.1-2.1zM12 6a6 6 0 00-6 6c0 2.2 1.2 4.1 3 5.2V20h6v-2.8c1.8-1.1 3-3 3-5.2a6 6 0 00-6-6zm-2 15h4v2h-4v-2z"/>
+                            </svg>
+                            <!-- 2: Juego (Baseball Bat & Ball) -->
+                            <svg id="icon-2" class="lcd-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M18.5 3.5l-13 13 2 2 13-13-2-2zM4 18l-2 2 2 2 2-2-2-2zm13 0a3 3 0 100 6 3 3 0 000-6z"/>
+                            </svg>
+                            <!-- 3: Medicina (Syringe) -->
+                            <svg id="icon-3" class="lcd-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19 3l-2 2-2-2-1.5 1.5 2 2-9.5 9.5V20h4l9.5-9.5 2 2L23 11l-2-2 2-2-4-4zm-9 14H8v-2l6-6 2 2-6 6zM3 21l3-3"/>
+                            </svg>
+                        </div>
+
+                        <!-- CENTER PIXEL MATRIX CANVAS (32x22 Logical Pixel Grid) -->
+                        <div class="relative flex-1 flex items-center justify-center w-full h-full">
+                            <canvas id="tamaCanvas" width="160" height="110" class="w-full h-full block"></canvas>
+                        </div>
+
+                        <!-- BOTTOM ICON ROW (4: Bath, 5: Stats/Scale, 6: Discipline, 7: Attention) -->
+                        <div class="lcd-icon-bar border-t border-black/10">
+                            <!-- 4: Limpiar (Duck / Bath) -->
+                            <svg id="icon-4" class="lcd-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5a4 4 0 00-4 4c0 1.5.8 2.8 2 3.4V17a4 4 0 004 4h7a4 4 0 004-4v-3h-9v-1.6c1.2-.6 2-1.9 2-3.4a4 4 0 00-4-4H8zM2 9h2v2H2V9z"/>
+                            </svg>
+                            <!-- 5: Estado / Salud (Scale / Meter) -->
+                            <svg id="icon-5" class="lcd-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M3 3h18v18H3V3zm2 2v6h14V5H5zm6 2h2v3h-2V7zm-4 1h2v2H7V8zm8 0h2v2h-2V8zm-8 6v4h10v-4H7z"/>
+                            </svg>
+                            <!-- 6: Disciplina (Scold / Pac-mouth shout) -->
+                            <svg id="icon-6" class="lcd-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M9 4a7 7 0 100 14 7 7 0 005-2l-5-5 5-5a7 7 0 00-5-2zm9 3l4-2v2l-4 2V7zm0 4h4v2h-4v-2zm0 4l4 2v2l-4-2v-2z"/>
+                            </svg>
+                            <!-- 7: Atención (Alert Icon) -->
+                            <svg id="icon-7" class="lcd-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2a9 9 0 00-9 9c0 4.2 2.9 7.7 6.8 8.7L12 22l2.2-2.3C18.1 18.7 21 15.2 21 11a9 9 0 00-9-9zm-1 4h2v6h-2V6zm0 8h2v2h-2v-2z"/>
+                            </svg>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-auto mb-6 flex items-center justify-center gap-6 z-20">
+                <div class="flex flex-col items-center">
+                    <button id="btnA" class="tama-btn" aria-label="Botón A: Seleccionar"></button>
+                    <span class="text-[10px] font-black text-slate-500 mt-1">A</span>
+                </div>
+                <div class="flex flex-col items-center translate-y-2.5">
+                    <button id="btnB" class="tama-btn" aria-label="Botón B: Aceptar"></button>
+                    <span class="text-[10px] font-black text-slate-500 mt-1">B</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <button id="btnC" class="tama-btn" aria-label="Botón C: Cancelar"></button>
+                    <span class="text-[10px] font-black text-slate-500 mt-1">C</span>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="w-full max-w-md bg-white/85 backdrop-blur-md rounded-2xl p-3 shadow-sm border border-sky-100 z-20">
+        <div class="grid grid-cols-4 gap-2 text-center mb-2">
+            <div class="bg-slate-50 rounded-xl p-1.5 border border-slate-200">
+                <div class="text-[10px] font-bold text-slate-400 uppercase">Hambre</div>
+                <div id="hudHunger" class="text-xs font-black text-rose-600">♥♥♥♥</div>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-1.5 border border-slate-200">
+                <div class="text-[10px] font-bold text-slate-400 uppercase">Feliz</div>
+                <div id="hudHappy" class="text-xs font-black text-amber-500">♥♥♥♥</div>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-1.5 border border-slate-200">
+                <div class="text-[10px] font-bold text-slate-400 uppercase">Etapa</div>
+                <div id="hudStage" class="text-xs font-black text-emerald-700 truncate">Huevo</div>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-1.5 border border-slate-200">
+                <div class="text-[10px] font-bold text-slate-400 uppercase">Acción</div>
+                <div id="hudMenuName" class="text-xs font-black text-sky-700 truncate">Ninguna</div>
+            </div>
+        </div>
+        <div class="flex items-center justify-between text-[11px] text-slate-500 px-1">
+            <span><strong>A</strong> (Izq): Cambiar icono</span>
+            <span><strong>B</strong> (Centro): Confirmar</span>
+            <span><strong>C</strong> (Der): Salir</span>
+        </div>
+    </footer>
+
+    <!-- Help / Guide Modal (Custom Message Box - No alert()) -->
+    <div id="helpModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-5 shadow-2xl border-2 border-emerald-500">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-base font-black text-slate-800 flex items-center gap-2">
+                    <span>🥚</span> Guía de Cuidado Tamagotchi
+                </h2>
+                <button id="closeHelpBtn" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm">✕</button>
+            </div>
+            <div class="space-y-2.5 text-xs text-slate-600 leading-relaxed">
+                <p>¡Cuida a tu mascota virtual desde que nace del huevo hasta convertirse en el icónico <strong>Mimitchi</strong>!</p>
+                <div class="bg-slate-50 p-3 rounded-2xl space-y-1.5 border border-slate-200">
+                    <div><strong>Botón A (o Flecha Izq):</strong> Moverse entre los 7 iconos o elegir izquierda en el juego.</div>
+                    <div><strong>Botón B (o Espacio/Enter):</strong> Confirmar opción o elegir derecha en el juego.</div>
+                    <div><strong>Botón C (o Escape):</strong> Cancelar menú y volver a la pantalla principal.</div>
+                </div>
+                <ul class="list-disc list-inside space-y-1 text-[11px]">
+                    <li><strong>🍴 Comida:</strong> Dale arroz (llena hambre) o pastel (sube felicidad).</li>
+                    <li><strong>💡 Luz:</strong> Apaga la luz cuando tenga sueño (Zzz).</li>
+                    <li><strong>⚾ Juego:</strong> Adivina hacia qué lado mirará (A = Izq, B = Der).</li>
+                    <li><strong>💉 Medicina:</strong> Cúralo cuando aparezca una calavera.</li>
+                    <li><strong>🦆 Baño:</strong> Limpia la pantalla para que no enferme.</li>
+                    <li><strong>📟 Estado:</strong> Revisa su edad, peso, hambre y felicidad.</li>
+                    <li><strong>📢 Disciplina:</strong> Regáñalo si pita pidiendo atención pero está lleno y feliz.</li>
+                </ul>
+            </div>
+            <button id="gotItBtn" class="mt-4 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs shadow-md transition">
+                ¡ENTENDIDO, A JUGAR!
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* ============================================================================
+         * 1. SYNTHESIZED 8-BIT PIEZO BEEPER SOUND ENGINE (Web Audio API)
+         * ============================================================================ */
+        class PiezoAudio {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) this.ctx = new AudioCtx();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            beep(freq = 2400, duration = 0.055, delay = 0) {
+                if (!this.enabled) return;
+                try {
+                    this.init();
+                    if (!this.ctx) return;
+
+                    const now = this.ctx.currentTime + delay;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(freq, now);
+
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start(now);
+                    osc.stop(now + duration);
+                } catch (e) {
+                    // Fail silently if audio context blocked
+                }
+            }
+
+            playSelect() { this.beep(2600, 0.045, 0); }
+            playConfirm() {
+                this.beep(2600, 0.045, 0);
+                this.beep(3200, 0.06, 0.055);
+            }
+            playCancel() {
+                this.beep(2200, 0.045, 0);
+                this.beep(1700, 0.06, 0.055);
+            }
+            playHappy() {
+                const notes = [2093, 2637, 3136, 4186];
+                notes.forEach((n, i) => this.beep(n, 0.07, i * 0.08));
+            }
+            playSad() {
+                this.beep(1600, 0.14, 0);
+                this.beep(1250, 0.22, 0.16);
+            }
+            playHatch() {
+                const notes = [1800, 2000, 2200, 2600, 2200, 2800, 3400];
+                notes.forEach((n, i) => this.beep(n, 0.08, i * 0.09));
+            }
+            playCall() {
+                this.beep(2900, 0.09, 0);
+                this.beep(2900, 0.09, 0.13);
+                this.beep(2900, 0.09, 0.36);
+                this.beep(2900, 0.09, 0.49);
+            }
+        }
+
+        const sound = new PiezoAudio();
+
+        /* ============================================================================
+         * 2. RETRO PIXEL SPRITE BITMAPS (16x16 & 8x8 Authentic Pixel Matrices)
+         * ============================================================================ */
+        const SPRITES = {
+            egg1: [
+                "......XXXX......",
+                "....XX....XX....",
+                "...X..XX....X...",
+                "..X..XXXX....X..",
+                "..X..........X..",
+                ".X......XX....X.",
+                ".X.....XXXX...X.",
+                ".X.....XXXX...X.",
+                ".X......XX....X.",
+                ".X..XX........X.",
+                "..X.XX.......X..",
+                "..X..........X..",
+                "...X........X...",
+                "....XXXXXXXX....",
+                "................"
+            ],
+            eggCrack: [
+                "......XXXX......",
+                "....XX....XX....",
+                "...X..XX....X...",
+                "..X..X..X....X..",
+                "..X...X..X...X..",
+                ".X..XX....XX..X.",
+                ".XXX..XX..X.XX..",
+                ".X...X..XX....X.",
+                ".X............X.",
+                ".X..XX........X.",
+                "..X.XX.......X..",
+                "..X..........X..",
+                "...X........X...",
+                "....XXXXXXXX....",
+                "................"
+            ],
+            // Stage 1: Babytchi (Blob baby)
+            baby1: [
+                "................",
+                "................",
+                "................",
+                ".....XXXXXX.....",
+                "...XX......XX...",
+                "..X..........X..",
+                "..X..X....X..X..",
+                "..X....XX....X..",
+                "..X..........X..",
+                "...XX......XX...",
+                "....XXXXXXXX....",
+                "................",
+                "................"
+            ],
+            baby2: [
+                "................",
+                "................",
+                ".....XXXXXX.....",
+                "...XX......XX...",
+                "..X..........X..",
+                "..X..X....X..X..",
+                "..X...XXXX...X..",
+                "..X..........X..",
+                "...XX......XX...",
+                "....XXXXXXXX....",
+                "................",
+                "................",
+                "................"
+            ],
+            // Stage 2: Marutchi (Child)
+            child1: [
+                "................",
+                "....XXXXXXXX....",
+                "..XX........XX..",
+                ".X............X.",
+                ".X...X....X...X.",
+                ".X...X....X...X.",
+                ".X............X.",
+                ".X....XXXX....X.",
+                ".X............X.",
+                "..XX........XX..",
+                "...XXXXXXXXXX...",
+                "...XX......XX...",
+                "................"
+            ],
+            child2: [
+                "....XXXXXXXX....",
+                "..XX........XX..",
+                ".X............X.",
+                ".X...X....X...X.",
+                ".X............X.",
+                ".X....XXXX....X.",
+                ".X...X....X...X.",
+                ".X....XXXX....X.",
+                "..XX........XX..",
+                "...XXXXXXXXXX...",
+                "..XX........XX..",
+                "................",
+                "................"
+            ],
+            // Stage 3: Classic Rabbit/Mimitchi Character (Matches user's reference photo!)
+            mimitchi1: [
+                "...XXX....XXX...",
+                "..XXXXX..XXXXX..",
+                "..XXXXX..XXXXX..",
+                "...XXXX..XXXX...",
+                "..XXXXXXXXXXXX..",
+                ".XX..........XX.",
+                ".XX..X....X..XX.",
+                "XXX..........XXX",
+                "XXX...XXXX...XXX",
+                ".XX..........XX.",
+                "..XX........XX..",
+                "...XXXXXXXXXX...",
+                "...XXX....XXX...",
+                "................"
+            ],
+            mimitchi2: [
+                "..XXXX....XXXX..",
+                "..XXXXX..XXXXX..",
+                "...XXXX..XXXX...",
+                "..XXXXXXXXXXXX..",
+                ".XX..........XX.",
+                ".XX..X....X..XX.",
+                "XXX..........XXX",
+                "XXX...XXXX...XXX",
+                ".XX..X....X..XX.",
+                "..XX........XX..",
+                "...XXXXXXXXXX...",
+                "..XXX......XXX..",
+                "................",
+                "................"
+            ],
+            mimitchiHappy: [
+                "...XXX....XXX...",
+                "..XXXXX..XXXXX..",
+                "...XXXX..XXXX...",
+                "..XXXXXXXXXXXX..",
+                ".XX..........XX.",
+                ".XX.X.X..X.X.XX.",
+                "XXX..........XXX",
+                "XXX..XXXXXX..XXX",
+                ".XX...XXXX...XX.",
+                "..XX........XX..",
+                "...XXXXXXXXXX...",
+                "..XX........XX..",
+                "................",
+                "................"
+            ],
+            // Icons & Props (8x8)
+            poop1: [
+                "....XX..",
+                "...X..X.",
+                "..X....X",
+                ".X..XX.X",
+                "X......X",
+                "XXXXXXXX"
+            ],
+            poop2: [
+                "..X.....",
+                "....XX..",
+                "...X..X.",
+                "..X....X",
+                ".X..XX.X",
+                "XXXXXXXX"
+            ],
+            skull: [
+                ".XXXXXX.",
+                "X......X",
+                "X.X..X.X",
+                "X......X",
+                ".X.XX.X.",
+                ".XXXXXX.",
+                "..X..X.."
+            ],
+            riceBall: [
+                "...XX...",
+                "..XXXX..",
+                ".XXXXXX.",
+                "XXXXXXXX",
+                "XX.XX.XX",
+                "XXXXXXXX"
+            ],
+            cake: [
+                "...XX...",
+                "..X..X..",
+                ".XXXXXX.",
+                "X......X",
+                "XXXXXXXX",
+                "X......X",
+                "XXXXXXXX"
+            ],
+            heartFull: [
+                ".XX..XX.",
+                "XXXXXXXX",
+                "XXXXXXXX",
+                ".XXXXXX.",
+                "..XXXX..",
+                "...XX..."
+            ],
+            heartEmpty: [
+                ".XX..XX.",
+                "X..XX..X",
+                "X......X",
+                ".X....X.",
+                "..X..X..",
+                "...XX..."
+            ],
+            ghost: [
+                "..XXXX..",
+                ".X....X.",
+                "X.X..X.X",
+                "X......X",
+                "X..XX..X",
+                "X......X",
+                "X.X..X.X"
+            ]
+        };
+
+        // 5x5 Mini Pixel Font for Authentic LCD Text
+        const PIXEL_FONT = {
+            'A': ["0110","1001","1111","1001","1001"],
+            'B': ["1110","1001","1110","1001","1110"],
+            'C': ["0111","1000","1000","1000","0111"],
+            'D': ["1110","1001","1001","1001","1110"],
+            'E': ["1111","1000","1110","1000","1111"],
+            'F': ["1111","1000","1110","1000","1000"],
+            'G': ["0111","1000","1011","1001","0111"],
+            'H': ["1001","1001","1111","1001","1001"],
+            'I': ["111","010","010","010","111"],
+            'J': ["0011","0001","0001","1001","0110"],
+            'K': ["1001","1010","1100","1010","1001"],
+            'L': ["1000","1000","1000","1000","1111"],
+            'M': ["10001","11011","10101","10001","10001"],
+            'N': ["1001","1101","1011","1001","1001"],
+            'O': ["0110","1001","1001","1001","0110"],
+            'P': ["1110","1001","1110","1000","1000"],
+            'R': ["1110","1001","1110","1010","1001"],
+            'S': ["0111","1000","0110","0001","1110"],
+            'T': ["11111","00100","00100","00100","00100"],
+            'U': ["1001","1001","1001","1001","0110"],
+            'V': ["1001","1001","1001","0110","0110"],
+            'W': ["10001","10001","10101","11011","10001"],
+            'X': ["1001","0110","0110","0110","1001"],
+            'Y': ["10001","01010","00100","00100","00100"],
+            'Z': ["1111","0010","0100","1000","1111"],
+            '0': ["0110","1001","1001","1001","0110"],
+            '1': ["010","110","010","010","111"],
+            '2': ["1110","0001","0110","1000","1111"],
+            '3': ["1110","0001","0110","0001","1110"],
+            '4': ["1001","1001","1111","0001","0001"],
+            '5': ["1111","1000","1110","0001","1110"],
+            '6': ["0111","1000","1110","1001","0110"],
+            '7': ["1111","0001","0010","0100","0100"],
+            '8': ["0110","1001","0110","1001","0110"],
+            '9': ["0110","1001","0111","0001","1110"],
+            ':': ["0","1","0","1","0"],
+            '!': ["1","1","1","0","1"],
+            '?': ["1110","0001","0110","0000","0100"],
+            '-': ["000","111","000","000","000"],
+            ' ': ["00","00","00","00","00"]
+        };
+
+        /* ============================================================================
+         * 3. VIRTUAL PET GAME STATE & LOGIC
+         * ============================================================================ */
+        const MENU_NAMES = [
+            "Ninguna", "Comida", "Luz", "Juego", "Medicina", "Limpiar", "Estado", "Disciplina"
+        ];
+
+        const STAGE_NAMES = ["Huevo", "Bebé", "Niño", "Mimitchi"];
+
+        const state = {
+            stage: 0,           // 0: Egg, 1: Baby, 2: Child, 3: Mimitchi (Adult)
+            hunger: 2,          // 0 to 4
+            happy: 2,           // 0 to 4
+            discipline: 1,      // 0 to 4
+            weight: 5,          // grams
+            age: 0,             // Tamagotchi years
+            poopCount: 0,       // 0 to 4
+            isSick: false,
+            isSleeping: false,
+            lightsOn: true,
+            needsDiscipline: false,
+            isDead: false,
+
+            // UI Navigation State
+            selectedIcon: -1,   // -1: None, 0..6: Selectable icons
+            mode: 'IDLE',       // IDLE, FOOD_MENU, EATING, PLAYING, STATS, CLEANING, HEALING, SCOLDING, NO_REFUSE
+            foodChoice: 0,      // 0: Arroz (Meal), 1: Pastel (Snack)
+            statPage: 0,        // 0: Age/Weight, 1: Hunger, 2: Happy, 3: Discipline
+
+            // Minigame State ("Left or Right")
+            gameRound: 0,
+            gameWins: 0,
+            gamePhase: 'WAIT',  // WAIT, REVEAL, SUMMARY
+            petLookDir: 'LEFT',
+            playerGuess: 'LEFT',
+
+            // Animation & Timing
+            petX: 8,            // Logical X on 32x22 grid
+            petDir: 1,
+            animTick: 0,
+            hatchTicks: 0,
+            timeSpeed: 1,       // 1x, 3x, 10x speed multiplier
+            lifeSeconds: 0,
+            cleanSweepX: 32
+        };
+
+        /* ============================================================================
+         * 4. CANVAS RENDERING ENGINE (32x22 Logical LCD Grid -> 160x110 Canvas)
+         * ============================================================================ */
+        const canvas = document.getElementById('tamaCanvas');
+        const ctx = canvas.getContext('2d');
+        const PIXEL_SIZE = 5; // 32 * 5 = 160px width, 22 * 5 = 110px height
+        const GRID_W = 32;
+        const GRID_H = 22;
+
+        function drawPixel(x, y, active = true) {
+            if (x < 0 || x >= GRID_W || y < 0 || y >= GRID_H) return;
+            if (!state.lightsOn && state.mode === 'IDLE') {
+                ctx.fillStyle = active ? '#8ca077' : 'rgba(255,255,255,0.02)';
+            } else {
+                ctx.fillStyle = active ? '#1c2214' : 'rgba(28, 34, 20, 0.06)';
+            }
+            ctx.fillRect(x * PIXEL_SIZE + 0.5, y * PIXEL_SIZE + 0.5, PIXEL_SIZE - 1, PIXEL_SIZE - 1);
+        }
+
+        function drawBitmap(bitmap, startX, startY, flipX = false) {
+            if (!bitmap) return;
+            for (let r = 0; r < bitmap.length; r++) {
+                const row = bitmap[r];
+                for (let c = 0; c < row.length; c++) {
+                    const char = flipX ? row[row.length - 1 - c] : row[c];
+                    if (char === 'X' || char === '1') {
+                        drawPixel(startX + c, startY + r, true);
+                    }
+                }
+            }
+        }
+
+        function drawText(text, startX, startY) {
+            let curX = startX;
+            const upper = text.toUpperCase();
+            for (let i = 0; i < upper.length; i++) {
+                const ch = upper[i];
+                const glyph = PIXEL_FONT[ch] || PIXEL_FONT[' '];
+                drawBitmap(glyph, curX, startY, false);
+                curX += glyph[0].length + 1;
+            }
+        }
+
+        function getCurrentPetSprite(pose = 'idle') {
+            if (state.stage === 0) {
+                return (state.hatchTicks > 4 || state.animTick % 2 === 1) ? SPRITES.eggCrack : SPRITES.egg1;
+            }
+            if (state.stage === 1) {
+                return (state.animTick % 2 === 0) ? SPRITES.baby1 : SPRITES.baby2;
+            }
+            if (state.stage === 2) {
+                return (state.animTick % 2 === 0) ? SPRITES.child1 : SPRITES.child2;
+            }
+            if (pose === 'happy') return SPRITES.mimitchiHappy;
+            return (state.animTick % 2 === 0) ? SPRITES.mimitchi1 : SPRITES.mimitchi2;
+        }
+
+        function renderLCD() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw subtle LCD pixel matrix background grid
+            for (let y = 0; y < GRID_H; y++) {
+                for (let x = 0; x < GRID_W; x++) {
+                    drawPixel(x, y, false);
+                }
+            }
+
+            // Update screen night mode class
+            const lcdEl = document.getElementById('lcdScreen');
+            if (!state.lightsOn) {
+                lcdEl.classList.add('lights-off');
+            } else {
+                lcdEl.classList.remove('lights-off');
+            }
+
+            // 1. DEAD SCREEN
+            if (state.isDead) {
+                drawBitmap(SPRITES.ghost, 12, 4);
+                drawText("FIN", 10, 14);
+                return;
+            }
+
+            // 2. EGG HATCHING SCREEN
+            if (state.stage === 0) {
+                const wobble = (state.animTick % 2 === 0) ? 0 : 1;
+                drawBitmap(getCurrentPetSprite(), 8 + wobble, 4);
+                if (state.hatchTicks <= 2) {
+                    drawText("PULSA B", 2, 17);
+                } else {
+                    drawText("LISTO!", 4, 17);
+                }
+                return;
+            }
+
+            // 3. FOOD SELECTION MENU
+            if (state.mode === 'FOOD_MENU') {
+                drawText("COMIDA", 4, 1);
+                // Pointer arrow
+                const arrowY = state.foodChoice === 0 ? 8 : 15;
+                drawBitmap(["100","110","111","110","100"], 2, arrowY);
+
+                drawBitmap(SPRITES.riceBall, 7, 7);
+                drawText("ARROZ", 16, 8);
+
+                drawBitmap(SPRITES.cake, 7, 14);
+                drawText("PASTEL", 16, 15);
+                return;
+            }
+
+            // 4. EATING ANIMATION
+            if (state.mode === 'EATING') {
+                const foodSprite = state.foodChoice === 0 ? SPRITES.riceBall : SPRITES.cake;
+                if (state.animTick % 2 === 0) {
+                    drawBitmap(foodSprite, 4, 9);
+                }
+                drawBitmap(getCurrentPetSprite('happy'), 13, 5);
+                return;
+            }
+
+            // 5. STATS METER PAGES
+            if (state.mode === 'STATS') {
+                if (state.statPage === 0) {
+                    drawText("EDAD:" + state.age, 3, 4);
+                    drawText("PESO:" + state.weight + "G", 3, 13);
+                } else if (state.statPage === 1) {
+                    drawText("HAMBRE", 4, 3);
+                    for (let i = 0; i < 4; i++) {
+                        const hSprite = i < state.hunger ? SPRITES.heartFull : SPRITES.heartEmpty;
+                        drawBitmap(hSprite, 1 + i * 8, 11);
+                    }
+                } else if (state.statPage === 2) {
+                    drawText("FELIZ", 6, 3);
+                    for (let i = 0; i < 4; i++) {
+                        const hSprite = i < state.happy ? SPRITES.heartFull : SPRITES.heartEmpty;
+                        drawBitmap(hSprite, 1 + i * 8, 11);
+                    }
+                } else if (state.statPage === 3) {
+                    drawText("EDUCAR", 4, 3);
+                    // Draw discipline bar
+                    for (let x = 3; x < 29; x++) {
+                        drawPixel(x, 11, true);
+                        drawPixel(x, 16, true);
+                    }
+                    drawPixel(3, 12, true); drawPixel(3, 13, true); drawPixel(3, 14, true); drawPixel(3, 15, true);
+                    drawPixel(28, 12, true); drawPixel(28, 13, true); drawPixel(28, 14, true); drawPixel(28, 15, true);
+                    const fillCols = Math.floor((state.discipline / 4) * 24);
+                    for (let x = 4; x < 4 + fillCols; x++) {
+                        for (let y = 12; y <= 15; y++) drawPixel(x, y, true);
+                    }
+                }
+                return;
+            }
+
+            // 6. MINIGAME: GUESS LEFT OR RIGHT
+            if (state.mode === 'PLAYING') {
+                if (state.gamePhase === 'WAIT') {
+                    drawText("A:IZQ B:DER", 1, 1);
+                    drawBitmap(getCurrentPetSprite(), 8, 7);
+                } else if (state.gamePhase === 'REVEAL') {
+                    const won = state.playerGuess === state.petLookDir;
+                    drawText(won ? "BIEN!" : "OH NO", 6, 1);
+                    const flip = state.petLookDir === 'RIGHT';
+                    drawBitmap(getCurrentPetSprite(won ? 'happy' : 'idle'), 8, 7, flip);
+                    // Draw direction indicator arrow
+                    if (state.petLookDir === 'LEFT') {
+                        drawText("<", 2, 11);
+                    } else {
+                        drawText(">", 26, 11);
+                    }
+                } else if (state.gamePhase === 'SUMMARY') {
+                    drawText("PTS:" + state.gameWins + "-5", 3, 2);
+                    drawBitmap(getCurrentPetSprite(state.gameWins >= 3 ? 'happy' : 'idle'), 8, 8);
+                }
+                return;
+            }
+
+            // 7. CLEANING WAVE ANIMATION
+            if (state.mode === 'CLEANING') {
+                // Draw water wave sweeping across screen
+                for (let y = 2; y < GRID_H - 2; y++) {
+                    const waveOffset = (y % 2 === 0) ? 0 : 1;
+                    drawPixel(state.cleanSweepX + waveOffset, y, true);
+                    drawPixel(state.cleanSweepX + 1 + waveOffset, y, true);
+                }
+                if (state.cleanSweepX < 14) {
+                    drawBitmap(getCurrentPetSprite('happy'), 8, 5);
+                }
+                return;
+            }
+
+            // 8. REFUSAL / SCOLD / HEAL ANIMATIONS
+            if (state.mode === 'NO_REFUSE') {
+                drawText("NO!", 10, 2);
+                const flip = state.animTick % 2 === 0;
+                drawBitmap(getCurrentPetSprite(), 8, 7, flip);
+                return;
+            }
+
+            if (state.mode === 'HEALING') {
+                drawText("CURADO!", 3, 2);
+                drawBitmap(getCurrentPetSprite('happy'), 8, 7);
+                return;
+            }
+
+            if (state.mode === 'SCOLDING') {
+                drawText("BUENO!", 4, 2);
+                drawBitmap(getCurrentPetSprite('happy'), 8, 7);
+                return;
+            }
+
+            // 9. DEFAULT IDLE ROOM VIEW
+            if (!state.lightsOn) {
+                // Lights are turned off: only show Zzz in corner
+                if (state.isSleeping) {
+                    drawText(state.animTick % 2 === 0 ? "Z" : "ZZ", 22, 3);
+                }
+                return;
+            }
+
+            // Draw Pet wandering around
+            const flipPet = state.petDir > 0;
+            drawBitmap(getCurrentPetSprite(), state.petX, 5, flipPet);
+
+            // Sleeping Zzz
+            if (state.isSleeping) {
+                drawText(state.animTick % 2 === 0 ? "Z" : "ZZ", 22, 2);
+            }
+
+            // Sick Skull Icon
+            if (state.isSick) {
+                drawBitmap(SPRITES.skull, 2, 2);
+            }
+
+            // Poop Stack on the right side
+            const poopSprite = state.animTick % 2 === 0 ? SPRITES.poop1 : SPRITES.poop2;
+            for (let i = 0; i < state.poopCount; i++) {
+                const px = 23 - (i % 2) * 7;
+                const py = 14 - Math.floor(i / 2) * 7;
+                drawBitmap(poopSprite, px, py);
+            }
+        }
+
+        /* ============================================================================
+         * 5. HUD & ICON HIGHLIGHT UPDATES
+         * ============================================================================ */
+        function updateUI() {
+            // Update Top & Bottom LCD Icon Highlights (0 to 6)
+            for (let i = 0; i < 7; i++) {
+                const iconEl = document.getElementById(`icon-${i}`);
+                if (iconEl) {
+                    iconEl.classList.toggle('focused', state.selectedIcon === i);
+                }
+            }
+
+            // Icon 7: Attention Icon lights up when Tamagotchi needs care
+            const needsCare = (
+                state.hunger === 0 ||
+                state.happy === 0 ||
+                state.isSick ||
+                state.poopCount > 0 ||
+                state.needsDiscipline ||
+                (state.isSleeping && state.lightsOn)
+            ) && state.stage > 0 && !state.isDead;
+
+            const attIcon = document.getElementById('icon-7');
+            if (attIcon) {
+                attIcon.classList.toggle('focused', needsCare);
+                attIcon.classList.toggle('attention-blink', needsCare);
+            }
+
+            // Update Bottom Quick Telemetry HUD
+            document.getElementById('hudHunger').textContent = '♥'.repeat(state.hunger) + '♡'.repeat(4 - state.hunger);
+            document.getElementById('hudHappy').textContent = '♥'.repeat(state.happy) + '♡'.repeat(4 - state.happy);
+            document.getElementById('hudStage').textContent = state.isDead ? 'Fallecido' : STAGE_NAMES[state.stage];
+            document.getElementById('hudMenuName').textContent = MENU_NAMES[state.selectedIcon + 1] || 'Ninguna';
+
+            renderLCD();
+        }
+
+        /* ============================================================================
+         * 6. BUTTON A, B, C INTERACTION HANDLERS
+         * ============================================================================ */
+        function pressButtonA() {
+            // Visual button press feedback
+            triggerBtnAnim('btnA');
+
+            if (state.isDead) {
+                resetTamagotchi();
+                return;
+            }
+
+            if (state.stage === 0) {
+                sound.playSelect();
+                state.hatchTicks++;
+                if (state.hatchTicks >= 5) hatchEgg();
+                updateUI();
+                return;
+            }
+
+            if (state.mode === 'IDLE') {
+                sound.playSelect();
+                state.selectedIcon = (state.selectedIcon + 1) % 7;
+                updateUI();
+            } else if (state.mode === 'FOOD_MENU') {
+                sound.playSelect();
+                state.foodChoice = state.foodChoice === 0 ? 1 : 0;
+                updateUI();
+            } else if (state.mode === 'STATS') {
+                sound.playSelect();
+                state.statPage = (state.statPage + 1) % 4;
+                updateUI();
+            } else if (state.mode === 'PLAYING' && state.gamePhase === 'WAIT') {
+                makeGameGuess('LEFT');
+            }
+        }
+
+        function pressButtonB() {
+            triggerBtnAnim('btnB');
+
+            if (state.isDead) {
+                resetTamagotchi();
+                return;
+            }
+
+            // Hatching the egg quickly with B
+            if (state.stage === 0) {
+                sound.playConfirm();
+                state.hatchTicks += 2;
+                if (state.hatchTicks >= 5) hatchEgg();
+                updateUI();
+                return;
+            }
+
+            if (state.mode === 'IDLE') {
+                if (state.selectedIcon === -1) {
+                    // Check stats shortcut if pressing B with no icon selected
+                    sound.playSelect();
+                    state.selectedIcon = 5;
+                    updateUI();
+                    return;
+                }
+                executeSelectedAction(state.selectedIcon);
+            } else if (state.mode === 'FOOD_MENU') {
+                feedPet(state.foodChoice);
+            } else if (state.mode === 'STATS') {
+                sound.playSelect();
+                state.statPage = (state.statPage + 1) % 4;
+                updateUI();
+            } else if (state.mode === 'PLAYING' && state.gamePhase === 'WAIT') {
+                makeGameGuess('RIGHT');
+            }
+        }
+
+        function pressButtonC() {
+            triggerBtnAnim('btnC');
+
+            if (state.isDead) {
+                resetTamagotchi();
+                return;
+            }
+
+            sound.playCancel();
+            if (state.mode !== 'IDLE') {
+                state.mode = 'IDLE';
+            } else {
+                state.selectedIcon = -1;
+            }
+            updateUI();
+        }
+
+        function executeSelectedAction(iconIndex) {
+            // If sleeping, only Light (1) and Stats (5) work
+            if (state.isSleeping && iconIndex !== 1 && iconIndex !== 5) {
+                sound.playSad();
+                showTemporaryMode('NO_REFUSE', 1100);
+                return;
+            }
+
+            switch (iconIndex) {
+                case 0: // Comida
+                    sound.playConfirm();
+                    state.mode = 'FOOD_MENU';
+                    state.foodChoice = 0;
+                    updateUI();
+                    break;
+
+                case 1: // Luz (Toggle On/Off)
+                    sound.playConfirm();
+                    state.lightsOn = !state.lightsOn;
+                    updateUI();
+                    break;
+
+                case 2: // Juego
+                    if (state.isSick || state.needsDiscipline) {
+                        sound.playSad();
+                        showTemporaryMode('NO_REFUSE', 1100);
+                        return;
+                    }
+                    sound.playConfirm();
+                    startMiniGame();
+                    break;
+
+                case 3: // Medicina
+                    if (!state.isSick) {
+                        sound.playSad();
+                        showTemporaryMode('NO_REFUSE', 1100);
+                    } else {
+                        state.isSick = false;
+                        sound.playHappy();
+                        showTemporaryMode('HEALING', 1400);
+                    }
+                    break;
+
+                case 4: // Limpiar (Bath)
+                    sound.playConfirm();
+                    startCleaningSweep();
+                    break;
+
+                case 5: // Estado (Stats)
+                    sound.playConfirm();
+                    state.mode = 'STATS';
+                    state.statPage = 0;
+                    updateUI();
+                    break;
+
+                case 6: // Disciplina
+                    if (state.needsDiscipline) {
+                        state.needsDiscipline = false;
+                        state.discipline = Math.min(4, state.discipline + 1);
+                        sound.playHappy();
+                        showTemporaryMode('SCOLDING', 1400);
+                    } else {
+                        // Scolding unnecessarily lowers happiness slightly
+                        state.happy = Math.max(0, state.happy - 1);
+                        sound.playSad();
+                        showTemporaryMode('NO_REFUSE', 1100);
+                    }
+                    break;
+            }
+        }
+
+        function feedPet(choice) {
+            if (state.isSick || state.needsDiscipline) {
+                sound.playSad();
+                showTemporaryMode('NO_REFUSE', 1100);
+                return;
+            }
+
+            if (choice === 0) {
+                // Arroz (Meal)
+                if (state.hunger >= 4) {
+                    sound.playSad();
+                    showTemporaryMode('NO_REFUSE', 1100);
+                    return;
+                }
+                state.hunger = Math.min(4, state.hunger + 1);
+                state.weight += 1;
+            } else {
+                // Pastel (Snack)
+                state.happy = Math.min(4, state.happy + 1);
+                state.weight += 2;
+                // Eating too many snacks can make pet sick
+                if (state.weight > 25 && Math.random() < 0.35) {
+                    state.isSick = true;
+                }
+            }
+
+            sound.playHappy();
+            showTemporaryMode('EATING', 1500, 'FOOD_MENU');
+        }
+
+        function startMiniGame() {
+            state.mode = 'PLAYING';
+            state.gameRound = 0;
+            state.gameWins = 0;
+            state.gamePhase = 'WAIT';
+            updateUI();
+        }
+
+        function makeGameGuess(dir) {
+            state.playerGuess = dir;
+            state.petLookDir = Math.random() < 0.5 ? 'LEFT' : 'RIGHT';
+            state.gamePhase = 'REVEAL';
+            state.gameRound++;
+
+            if (state.playerGuess === state.petLookDir) {
+                state.gameWins++;
+                sound.playConfirm();
+            } else {
+                sound.playSad();
+            }
+
+            updateUI();
+
+            setTimeout(() => {
+                if (state.mode !== 'PLAYING') return;
+                if (state.gameRound < 5) {
+                    state.gamePhase = 'WAIT';
+                    updateUI();
+                } else {
+                    state.gamePhase = 'SUMMARY';
+                    if (state.gameWins >= 3) {
+                        state.happy = Math.min(4, state.happy + 1);
+                        state.weight = Math.max(5, state.weight - 1);
+                        sound.playHappy();
+                    } else {
+                        sound.playSad();
+                    }
+                    updateUI();
+                    setTimeout(() => {
+                        if (state.mode === 'PLAYING') {
+                            state.mode = 'IDLE';
+                            updateUI();
+                        }
+                    }, 1600);
+                }
+            }, 1000);
+        }
+
+        function startCleaningSweep() {
+            state.mode = 'CLEANING';
+            state.cleanSweepX = 30;
+            const sweepInterval = setInterval(() => {
+                state.cleanSweepX -= 4;
+                if (state.cleanSweepX <= 0) {
+                    clearInterval(sweepInterval);
+                    state.poopCount = 0;
+                    state.mode = 'IDLE';
+                    sound.playHappy();
+                }
+                updateUI();
+            }, 90);
+        }
+
+        function showTemporaryMode(tempMode, duration = 1200, returnMode = 'IDLE') {
+            state.mode = tempMode;
+            updateUI();
+            setTimeout(() => {
+                if (state.mode === tempMode) {
+                    state.mode = returnMode;
+                    updateUI();
+                }
+            }, duration);
+        }
+
+        function hatchEgg() {
+            state.stage = 1; // Baby
+            state.hunger = 2;
+            state.happy = 2;
+            state.weight = 5;
+            sound.playHatch();
+            updateUI();
+        }
+
+        function resetTamagotchi() {
+            state.stage = 0;
+            state.hunger = 2;
+            state.happy = 2;
+            state.discipline = 1;
+            state.weight = 5;
+            state.age = 0;
+            state.poopCount = 0;
+            state.isSick = false;
+            state.isSleeping = false;
+            state.lightsOn = true;
+            state.needsDiscipline = false;
+            state.isDead = false;
+            state.selectedIcon = -1;
+            state.mode = 'IDLE';
+            state.hatchTicks = 0;
+            state.lifeSeconds = 0;
+            sound.playConfirm();
+            updateUI();
+        }
+
+        function triggerBtnAnim(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.add('pressed');
+            setTimeout(() => el.classList.remove('pressed'), 120);
+        }
+
+        /* ============================================================================
+         * 7. REAL-TIME SIMULATION LOOP & EVOLUTION SYSTEM
+         * ============================================================================ */
+        window.onload = function () {
+            // Animation loop (every 550ms)
+            setInterval(() => {
+                state.animTick++;
+
+                // Egg auto-hatch after ~6 seconds if user waits
+                if (state.stage === 0) {
+                    state.hatchTicks++;
+                    if (state.hatchTicks >= 10) {
+                        hatchEgg();
+                    }
+                } else if (state.mode === 'IDLE' && !state.isSleeping && !state.isDead) {
+                    // Move pet horizontally across the LCD room
+                    if (Math.random() < 0.65) {
+                        state.petX += state.petDir * 2;
+                        if (state.petX >= 14) {
+                            state.petX = 14;
+                            state.petDir = -1;
+                        } else if (state.petX <= 2) {
+                            state.petX = 2;
+                            state.petDir = 1;
+                        }
+                    }
+                }
+
+                updateUI();
+            }, 550);
+
+            // Biological clock loop (every 1000ms, scaled by speed multiplier)
+            setInterval(() => {
+                if (state.stage === 0 || state.isDead) return;
+
+                state.lifeSeconds += state.timeSpeed;
+
+                // Evolution progression so user can experience full growth
+                if (state.stage === 1 && state.lifeSeconds >= 45) {
+                    state.stage = 2; // Evolves into Child (Marutchi)
+                    state.weight += 5;
+                    state.age = 1;
+                    sound.playHatch();
+                } else if (state.stage === 2 && state.lifeSeconds >= 110) {
+                    state.stage = 3; // Evolves into Classic Mimitchi!
+                    state.weight += 10;
+                    state.age = 3;
+                    sound.playHatch();
+                }
+
+                // Periodic age increment
+                if (state.lifeSeconds % 60 === 0) {
+                    state.age++;
+                }
+
+                // Hunger decay
+                if (state.lifeSeconds % 28 === 0 && !state.isSleeping) {
+                    if (state.hunger > 0) {
+                        state.hunger--;
+                        if (state.hunger === 0) sound.playCall();
+                    }
+                }
+
+                // Happiness decay
+                if (state.lifeSeconds % 34 === 0 && !state.isSleeping) {
+                    if (state.happy > 0) {
+                        state.happy--;
+                        if (state.happy === 0) sound.playCall();
+                    }
+                }
+
+                // Poop generation
+                if (state.lifeSeconds % 42 === 0 && !state.isSleeping) {
+                    if (state.poopCount < 4) {
+                        state.poopCount++;
+                        sound.playSelect();
+                    }
+                }
+
+                // Sickness check if room is dirty or neglected
+                if (state.lifeSeconds % 38 === 0) {
+                    if (state.poopCount >= 2 || (state.hunger === 0 && state.happy === 0)) {
+                        if (!state.isSick) {
+                            state.isSick = true;
+                            sound.playCall();
+                        }
+                    }
+                }
+
+                // Discipline call (fussy behavior)
+                if (state.lifeSeconds % 65 === 0 && !state.isSleeping && state.discipline < 4) {
+                    if (state.hunger > 1 && state.happy > 1 && Math.random() < 0.45) {
+                        state.needsDiscipline = true;
+                        sound.playCall();
+                    }
+                }
+
+                // Sleep cycle (occasionally gets sleepy)
+                if (state.lifeSeconds % 95 === 0 && !state.isSleeping) {
+                    state.isSleeping = true;
+                    sound.playCall();
+                } else if (state.isSleeping && state.lifeSeconds % 40 === 0 && !state.lightsOn) {
+                    // Wakes up refreshed after sleeping in the dark
+                    state.isSleeping = false;
+                    state.lightsOn = true;
+                    sound.playHappy();
+                }
+
+                updateUI();
+            }, 1000);
+
+            // Bind Physical Buttons
+            document.getElementById('btnA').addEventListener('click', pressButtonA);
+            document.getElementById('btnB').addEventListener('click', pressButtonB);
+            document.getElementById('btnC').addEventListener('click', pressButtonC);
+
+            // Keyboard Controls
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
+                    e.preventDefault();
+                    pressButtonA();
+                } else if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ' || e.key.toLowerCase() === 'b') {
+                    e.preventDefault();
+                    pressButtonB();
+                } else if (e.key === 'ArrowRight' || e.key === 'Escape' || e.key.toLowerCase() === 'c') {
+                    e.preventDefault();
+                    pressButtonC();
+                }
+            });
+
+            // Header Quick Controls
+            document.getElementById('soundToggleBtn').addEventListener('click', () => {
+                sound.enabled = !sound.enabled;
+                document.getElementById('soundIcon').textContent = sound.enabled ? '🔊' : '🔇';
+                if (sound.enabled) sound.playSelect();
+            });
+
+            document.getElementById('speedToggleBtn').addEventListener('click', () => {
+                if (state.timeSpeed === 1) state.timeSpeed = 3;
+                else if (state.timeSpeed === 3) state.timeSpeed = 10;
+                else state.timeSpeed = 1;
+                document.getElementById('speedText').textContent = state.timeSpeed + 'x';
+                sound.playSelect();
+            });
+
+            // Help Modal Controls
+            const helpModal = document.getElementById('helpModal');
+            document.getElementById('helpModalBtn').addEventListener('click', () => {
+                helpModal.classList.remove('hidden');
+            });
+            document.getElementById('closeHelpBtn').addEventListener('click', () => {
+                helpModal.classList.add('hidden');
+            });
+            document.getElementById('gotItBtn').addEventListener('click', () => {
+                helpModal.classList.add('hidden');
+                sound.playConfirm();
+            });
+
+            updateUI();
+        };
+    </script>
+</body>
+</html>
