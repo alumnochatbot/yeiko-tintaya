@@ -1503,6 +1503,17 @@
         demoPrompt: "App de Trivia conectada a https://alumnochatbot.github.io/yeiko-tintaya/trivia. Desafíos de preguntas interactivas con puntuación y retroalimentación inmediata."
       },
       {
+        id: "proj-crossyroad",
+        title: "Crossy Road 3D",
+        category: "juegos",
+        categoryLabel: "Juegos & Simulación",
+        desc: "¡Cruza la calle, evade autos, salta sobre troncos y recolecta monedas sin que te atropellen ni te lleve el río!",
+        icon: "🐔",
+        tags: ["Crossy Road", "Juegos", "Simulación", "3D"],
+        url: "crossyroad/index.html",
+        demoPrompt: "Crossy Road 3D cargado correctamente. ¡Juega ahora!"
+      },
+      {
         id: "proj-1",
         title: "Minecraft AI World",
         category: "juegos",
@@ -1603,6 +1614,11 @@
             // Asegurar que la nueva Trivia esté integrada automáticamente al catálogo existente
             if (!parsed.some(p => p.id === "proj-trivia" || (p.url && p.url.includes("trivia")))) {
               parsed.unshift(DEFAULT_PROJECTS[0]);
+              saveProjects(parsed);
+            }
+            // Asegurar que Crossy Road esté integrado
+            if (!parsed.some(p => p.id === "proj-crossyroad" || (p.url && p.url.includes("crossyroad")))) {
+              parsed.splice(1, 0, DEFAULT_PROJECTS[1]);
               saveProjects(parsed);
             }
             return parsed;
