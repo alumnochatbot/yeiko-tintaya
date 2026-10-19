@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crossy Road 3D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', monospace;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            background-color: #1a1a2e;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        .retro-shadow {
+            text-shadow: 3px 3px 0px #000;
+        }
+        .btn-retro {
+            box-shadow: 0px 6px 0px #1e293b, 0px 10px 20px rgba(0,0,0,0.4);
+            transition: all 0.05s ease;
+        }
+        .btn-retro:active {
+            transform: translateY(4px);
+            box-shadow: 0px 2px 0px #1e293b, 0px 5px 10px rgba(0,0,0,0.4);
+        }
+    </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden">
+
+    <!-- HUD / Score overlay -->
+    <div id="ui-hud" class="absolute top-6 left-6 flex flex-col gap-2 pointer-events-none z-10 hidden">
+        <div class="bg-black/60 backdrop-blur-md px-4 py-3 rounded-xl border-2 border-white/20 text-white flex items-center gap-4">
+            <span class="text-xs text-yellow-400">PUNTOS:</span>
+            <span id="score-val" class="text-xl font-bold">0</span>
+        </div>
+        <div class="bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl border-2 border-white/20 text-white flex items-center gap-4">
+            <span class="text-[10px] text-amber-300">MONEDAS:</span>
+            <span id="coins-val" class="text-sm font-bold text-amber-300">0</span>
+        </div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="screen-start" class="absolute inset-0 bg-gradient-to-b from-sky-400 to-indigo-900 flex flex-col items-center justify-center z-20 px-4">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl md:text-6xl text-yellow-300 retro-shadow mb-4 tracking-wider animate-bounce">CROSSY ROAD</h1>
+            <p class="text-white text-xs md:text-sm retro-shadow max-w-md leading-relaxed">¡Cruza la calle, evade autos, salta sobre troncos y recolecta monedas sin que te atropellen ni te lleve el río!</p>
+        </div>
+        <button id="btn-start" class="btn-retro bg-emerald-500 hover:bg-emerald-400 text-white text-sm md:text-lg px-8 py-4 rounded-xl border-4 border-emerald-700 cursor-pointer uppercase font-bold tracking-widest">
+            ¡Jugar Ahora!
+        </button>
+        <div class="mt-8 text-white/80 text-[10px] text-center">
+            <p>Controles: Flechas del Teclado / W A S D / Botones en pantalla</p>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="screen-gameover" class="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center z-20 hidden px-4">
+        <div class="text-center bg-slate-900/90 border-4 border-red-500 p-8 rounded-2xl max-w-sm w-full shadow-2xl">
+            <h2 class="text-2xl md:text-3xl text-red-500 retro-shadow mb-6">¡FIN DEL JUEGO!</h2>
+            <div class="space-y-3 mb-6 text-white text-xs">
+                <div class="flex justify-between border-b border-slate-700 pb-2">
+                    <span class="text-slate-400">Puntaje Final:</span>
+                    <span id="go-score" class="text-yellow-400 font-bold">0</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-700 pb-2">
+                    <span class="text-slate-400">Mejor Puntaje:</span>
+                    <span id="go-highscore" class="text-emerald-400 font-bold">0</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Monedas:</span>
+                    <span id="go-coins" class="text-amber-300 font-bold">0</span>
+                </div>
+            </div>
+            <button id="btn-restart" class="btn-retro w-full bg-blue-600 hover:bg-blue-500 text-white text-xs py-4 rounded-xl border-4 border-blue-800 cursor-pointer uppercase font-bold">
+                Jugar de Nuevo
+            </button>
+        </div>
+    </div>
+
+    <!-- On-screen Touch / Mobile Controls -->
+    <div id="touch-controls" class="absolute bottom-6 left-0 right-0 flex justify-between px-6 pointer-events-auto z-10 md:hidden">
+        <div class="grid grid-cols-3 gap-2 w-36 h-36">
+            <div></div>
+            <button id="ctrl-up" class="btn-retro bg-white/20 active:bg-white/40 border-2 border-white/50 rounded-xl flex items-center justify-center text-white text-lg">⬆️</button>
+            <div></div>
+            <button id="ctrl-left" class="btn-retro bg-white/20 active:bg-white/40 border-2 border-white/50 rounded-xl flex items-center justify-center text-white text-lg">⬅️</button>
+            <button id="ctrl-down" class="btn-retro bg-white/20 active:bg-white/40 border-2 border-white/50 rounded-xl flex items-center justify-center text-white text-lg">⬇️</button>
+            <button id="ctrl-right" class="btn-retro bg-white/20 active:bg-white/40 border-2 border-white/50 rounded-xl flex items-center justify-center text-white text-lg">➡️</button>
+        </div>
+    </div>
+
+    <script>
+        // Game States & Variables
+        let scene, camera, renderer;
+        let chicken;
+        let rows = [];
+        let score = 0, highScore = 0, coins = 0;
+        let gameActive = false;
+        let cameraTargetZ = 0;
+        let cameraTargetX = 0;
+
+        const tileSize = 1;
+        const visibleRowsBefore = 5;
+        const visibleRowsAfter = 15;
+
+        // Row Types: 'grass', 'road', 'river', 'rail'
+        let currentRowIndex = 0;
+        let maxRowReached = 0;
+
+        // Initialize Three.js scene
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x75d1f0);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            updateCameraPosition(0, 0, true);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.body.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xfffaed, 0.9);
+            dirLight.position.set(15, 30, 20);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 100;
+            const d = 15;
+            dirLight.shadow.camera.left = -d;
+            dirLight.shadow.camera.right = d;
+            dirLight.shadow.camera.top = d;
+            dirLight.shadow.camera.bottom = -d;
+            scene.add(dirLight);
+
+            // Window resize handler
+            window.addEventListener('resize', onWindowResize);
+
+            // Keyboard controls
+            window.addEventListener('keydown', handleKeyDown);
+
+            // Setup Touch / Button controls
+            setupTouchControls();
+
+            // Load high score
+            const savedHighScore = localStorage.getItem('crossy_high_score');
+            if (savedHighScore) highScore = parseInt(savedHighScore, 10);
+        }
+
+        // Voxel/Block creation helpers
+        function createBox(width, height, depth, color, castShadow = true, receiveShadow = true) {
+            const geometry = new THREE.BoxGeometry(width, height, depth);
+            const material = new THREE.MeshLambertMaterial({ color: color });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.castShadow = castShadow;
+            mesh.receiveShadow = receiveShadow;
+            return mesh;
+        }
+
+        function createChicken() {
+            const group = new THREE.Group();
+
+            // Body
+            const body = createBox(0.6, 0.5, 0.6, 0xffffff);
+            body.position.y = 0.25;
+            group.add(body);
+
+            // Head / Comb
+            const head = createBox(0.4, 0.4, 0.4, 0xffffff);
+            head.position.set(0, 0.65, 0.15);
+            group.add(head);
+
+            const comb = createBox(0.15, 0.2, 0.3, 0xef4444);
+            comb.position.set(0, 0.95, 0.15);
+            group.add(comb);
+
+            // Beak
+            const beak = createBox(0.2, 0.15, 0.2, 0xf59e0b);
+            beak.position.set(0, 0.6, 0.4);
+            group.add(beak);
+
+            // Eyes
+            const eye1 = createBox(0.08, 0.08, 0.08, 0x1e293b);
+            eye1.position.set(0.15, 0.7, 0.3);
+            group.add(eye1);
+
+            const eye2 = createBox(0.08, 0.08, 0.08, 0x1e293b);
+            eye2.position.set(-0.15, 0.7, 0.3);
+            group.add(eye2);
+
+            group.position.set(0, 0, 0);
+            return group;
+        }
+
+        // Row definitions
+        class Row {
+            constructor(zIndex) {
+                this.zIndex = zIndex;
+                this.type = this.determineType(zIndex);
+                this.group = new THREE.Group();
+                this.group.position.z = zIndex * tileSize;
+                this.obstacles = [];
+                this.collectibles = [];
+                this.build();
+                scene.add(this.group);
+            }
+
+            determineType(z) {
+                if (z <= 2) return 'grass';
+                const rand = Math.random();
+                if (rand < 0.35) return 'grass';
+                if (rand < 0.70) return 'road';
+                if (rand < 0.95) return 'river';
+                return 'rail';
+            }
+
+            build() {
+                // Base ground for row
+                let groundColor = 0x86efac; // Grass light
+                if (this.type === 'road') groundColor = 0x334155; // Asphalt
+                if (this.type === 'river') groundColor = 0x38bdf8; // Water
+                if (this.type === 'rail') groundColor = 0x475569; // Rails background
+
+                const ground = createBox(25, 0.2, tileSize, groundColor, false, true);
+                ground.position.y = -0.1;
+                this.group.add(ground);
+
+                if (this.type === 'grass') {
+                    // Add trees or rocks occasionally
+                    for (let x = -10; x <= 10; x += 2) {
+                        if (Math.random() < 0.3 && !(this.zIndex === 0 && Math.abs(x) <= 2)) {
+                            const tree = this.createTree();
+                            tree.position.x = x + (Math.random() - 0.5);
+                            this.group.add(tree);
+                            this.obstacles.push({ x: tree.position.x, width: 0.8 });
+                        }
+                    }
+                } else if (this.type === 'road') {
+                    // Add lane markings
+                    const lineGeo = new THREE.BoxGeometry(1, 0.02, 0.1);
+                    const lineMat = new THREE.MeshBasicMaterial({ color: 0xf1f5f9 });
+                    for (let x = -11; x <= 11; x += 3) {
+                        const line = new THREE.Mesh(lineGeo, lineMat);
+                        line.position.set(x, 0.01, 0);
+                        this.group.add(line);
+                    }
+
+                    // Add vehicles
+                    this.direction = Math.random() < 0.5 ? 1 : -1;
+                    this.speed = (0.04 + Math.random() * 0.06);
+                    const carCount = 1 + Math.floor(Math.random() * 2);
+                    for (let i = 0; i < carCount; i++) {
+                        const car = this.createCar();
+                        car.position.x = -12 + i * 12 + Math.random() * 4;
+                        car.rotation.y = this.direction === 1 ? Math.PI / 2 : -Math.PI / 2;
+                        this.group.add(car);
+                        this.obstacles.push({ mesh: car, width: 1.6, isMovable: true });
+                    }
+                } else if (this.type === 'river') {
+                    this.direction = Math.random() < 0.5 ? 1 : -1;
+                    this.speed = 0.03 + Math.random() * 0.03;
+                    const logCount = 2 + Math.floor(Math.random() * 2);
+                    for (let i = 0; i < logCount; i++) {
+                        const log = this.createLog();
+                        log.position.x = -10 + i * 8 + Math.random() * 3;
+                        this.group.add(log);
+                        this.obstacles.push({ mesh: log, width: 2.8, isLog: true });
+                    }
+                } else if (this.type === 'rail') {
+                    // Train tracks
+                    const rail1 = createBox(25, 0.05, 0.15, 0x94a3b8);
+                    rail1.position.set(0, 0.02, -0.2);
+                    this.group.add(rail1);
+                    const rail2 = createBox(25, 0.05, 0.15, 0x94a3b8);
+                    rail2.position.set(0, 0.02, 0.2);
+                    this.group.add(rail2);
+
+                    this.hasTrain = false;
+                    this.trainWarningTimer = 0;
+                    this.trainObj = this.createTrain();
+                    this.trainObj.position.x = -35;
+                    this.group.add(this.trainObj);
+                }
+
+                // Random collectible coins
+                if (Math.random() < 0.25 && this.type !== 'river') {
+                    const coin = this.createCoin();
+                    coin.position.x = (Math.random() - 0.5) * 10;
+                    this.group.add(coin);
+                    this.collectibles.push({ mesh: coin, collected: false });
+                }
+            }
+
+            createTree() {
+                const group = new THREE.Group();
+                const trunk = createBox(0.4, 0.8, 0.4, 0x78350f);
+                trunk.position.y = 0.4;
+                group.add(trunk);
+
+                const leaves = createBox(1.0, 1.2, 1.0, 0x15803d);
+                leaves.position.y = 1.3;
+                group.add(leaves);
+                return group;
+            }
+
+            createCar() {
+                const group = new THREE.Group();
+                const colors = [0xef4444, 0x3b82f6, 0xeab308, 0xa855f7, 0xffffff];
+                const carColor = colors[Math.floor(Math.random() * colors.length)];
+
+                const body = createBox(1.6, 0.5, 0.9, carColor);
+                body.position.y = 0.3;
+                group.add(body);
+
+                const cabin = createBox(0.9, 0.4, 0.8, 0x1e293b);
+                cabin.position.set(0.1, 0.75, 0);
+                group.add(cabin);
+
+                return group;
+            }
+
+            createLog() {
+                const group = new THREE.Group();
+                const log = createBox(3.0, 0.35, 0.8, 0x78350f);
+                log.position.y = 0.15;
+                group.add(log);
+                return group;
+            }
+
+            createTrain() {
+                const group = new THREE.Group();
+                const body = createBox(6.0, 1.0, 1.2, 0xdc2626);
+                body.position.y = 0.5;
+                group.add(body);
+                group.visible = false;
+                return group;
+            }
+
+            createCoin() {
+                const geometry = new THREE.CylinderGeometry(0.3, 0.3, 0.1, 16);
+                const material = new THREE.MeshLambertMaterial({ color: 0xfacc15 });
+                const coin = new THREE.Mesh(geometry, material);
+                coin.rotation.x = Math.PI / 2;
+                coin.position.y = 0.4;
+                return coin;
+            }
+
+            update(delta) {
+                // Move cars or logs
+                if (this.type === 'road' || this.type === 'river') {
+                    for (let obs of this.obstacles) {
+                        if (obs.isMovable || obs.isLog) {
+                            obs.mesh.position.x += this.speed * this.direction;
+                            if (this.direction === 1 && obs.mesh.position.x > 14) {
+                                obs.mesh.position.x = -14;
+                            } else if (this.direction === -1 && obs.mesh.position.x < -14) {
+                                obs.mesh.position.x = 14;
+                            }
+                        }
+                    }
+                } else if (this.type === 'rail') {
+                    // Trigger train periodically
+                    if (!this.hasTrain && Math.random() < 0.002) {
+                        this.hasTrain = true;
+                        this.trainObj.visible = true;
+                        this.trainObj.position.x = -30;
+                        this.trainSpeed = 0.6;
+                    }
+                    if (this.hasTrain) {
+                        this.trainObj.position.x += this.trainSpeed;
+                        if (this.trainObj.position.x > 30) {
+                            this.hasTrain = false;
+                            this.trainObj.visible = false;
+                        }
+                    }
+                }
+
+                // Rotate coins
+                for (let col of this.collectibles) {
+                    if (!col.collected) {
+                        col.mesh.rotation.z += 0.03;
+                    }
+                }
+            }
+
+            destroy() {
+                scene.remove(this.group);
+            }
+        }
+
+        function startGame() {
+            // Reset state
+            if (chicken) scene.remove(chicken);
+            rows.forEach(r => r.destroy());
+            rows = [];
+
+            score = 0;
+            coins = 0;
+            currentRowIndex = 0;
+            maxRowReached = 0;
+            document.getElementById('score-val').innerText = score;
+            document.getElementById('coins-val').innerText = coins;
+
+            // Generate initial rows
+            for (let z = -visibleRowsBefore; z <= visibleRowsAfter; z++) {
+                rows.push(new Row(z));
+            }
+
+            chicken = createChicken();
+            scene.add(chicken);
+            chicken.position.set(0, 0, 0);
+
+            updateCameraPosition(0, 0, true);
+
+            document.getElementById('screen-start').classList.add('hidden');
+            document.getElementById('screen-gameover').classList.add('hidden');
+            document.getElementById('ui-hud').classList.remove('hidden');
+
+            gameActive = true;
+        }
+
+        function updateCameraPosition(targetX, targetZ, instant = false) {
+            cameraTargetX = targetX * 0.3;
+            cameraTargetZ = targetZ - 7;
+            const targetPos = new THREE.Vector3(cameraTargetX + 6, 12, cameraTargetZ - 8);
+            if (instant) {
+                camera.position.copy(targetPos);
+            } else {
+                camera.position.lerp(targetPos, 0.1);
+            }
+            camera.lookAt(targetX, 0, targetZ + 2);
+        }
+
+        function moveChicken(dx, dz) {
+            if (!gameActive || !chicken) return;
+
+            // Corregido: dx positivo mueve a la derecha (+X) y dx negativo mueve a la izquierda (-X)
+            const newX = chicken.position.x + dx * tileSize;
+            const newZ = chicken.position.z + dz * tileSize;
+
+            // Boundary checks for X
+            if (newX < -10 || newX > 10) return;
+
+            // Check obstacle collision on grass
+            const targetRowZ = Math.round(newZ / tileSize);
+            const rowObj = rows.find(r => r.zIndex === targetRowZ);
+
+            if (rowObj && rowObj.type === 'grass') {
+                for (let obs of rowObj.obstacles) {
+                    if (Math.abs(newX - obs.x) < 0.7) {
+                        return; // blocked by tree
+                    }
+                }
+            }
+
+            // Animate jump
+            chicken.position.x = newX;
+            chicken.position.z = newZ;
+            chicken.rotation.y = dx > 0 ? -Math.PI/2 : dx < 0 ? Math.PI/2 : dz > 0 ? 0 : Math.PI;
+
+            // Jump arc animation effect
+            let jumpTime = 0;
+            const jumpAnim = setInterval(() => {
+                jumpTime += 0.2;
+                chicken.position.y = Math.sin(jumpTime * Math.PI) * 0.4;
+                if (jumpTime >= 1) {
+                    chicken.position.y = 0;
+                    clearInterval(jumpAnim);
+                }
+            }, 16);
+
+            // Update score & infinite generation
+            if (targetRowZ > maxRowReached) {
+                maxRowReached = targetRowZ;
+                score = maxRowReached;
+                document.getElementById('score-val').innerText = score;
+
+                // Add forward row, remove old behind row
+                rows.push(new Row(maxRowReached + visibleRowsAfter));
+                if (rows.length > visibleRowsBefore + visibleRowsAfter + 5) {
+                    const oldRow = rows.shift();
+                    oldRow.destroy();
+                }
+            }
+        }
+
+        function handleKeyDown(e) {
+            if (!gameActive) return;
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') moveChicken(0, 1);
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') moveChicken(0, -1);
+            // Corregidos los controles de teclado para izquierda y derecha
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') moveChicken(-1, 0);
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') moveChicken(1, 0);
+        }
+
+        function setupTouchControls() {
+            // Corregidos los botones en pantalla para izquierda y derecha
+            document.getElementById('ctrl-up').addEventListener('click', () => moveChicken(0, 1));
+            document.getElementById('ctrl-down').addEventListener('click', () => moveChicken(0, -1));
+            document.getElementById('ctrl-left').addEventListener('click', () => moveChicken(-1, 0));
+            document.getElementById('ctrl-right').addEventListener('click', () => moveChicken(1, 0));
+
+            document.getElementById('btn-start').addEventListener('click', startGame);
+            document.getElementById('btn-restart').addEventListener('click', startGame);
+        }
+
+        function gameOver() {
+            gameActive = false;
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('crossy_high_score', highScore);
+            }
+
+            document.getElementById('go-score').innerText = score;
+            document.getElementById('go-highscore').innerText = highScore;
+            document.getElementById('go-coins').innerText = coins;
+            document.getElementById('screen-gameover').classList.remove('hidden');
+            document.getElementById('ui-hud').classList.add('hidden');
+        }
+
+        let clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+
+            if (gameActive && chicken) {
+                // Update all active rows
+                rows.forEach(r => r.update(delta));
+
+                const currentZ = Math.round(chicken.position.z / tileSize);
+                const currentRow = rows.find(r => r.zIndex === currentZ);
+
+                if (currentRow) {
+                    // Check car / train collisions on roads or rails
+                    if (currentRow.type === 'road') {
+                        for (let obs of currentRow.obstacles) {
+                            const carWorldX = obs.mesh.position.x + currentRow.group.position.x;
+                            if (Math.abs(chicken.position.x - carWorldX) < 1.0) {
+                                gameOver();
+                            }
+                        }
+                    } else if (currentRow.type === 'rail') {
+                        if (currentRow.hasTrain && Math.abs(chicken.position.x - currentRow.trainObj.position.x) < 3.2) {
+                            gameOver();
+                        }
+                    } else if (currentRow.type === 'river') {
+                        let onLog = false;
+                        for (let obs of currentRow.obstacles) {
+                            const logWorldX = obs.mesh.position.x + currentRow.group.position.x;
+                            if (Math.abs(chicken.position.x - logWorldX) < 1.4) {
+                                onLog = true;
+                                chicken.position.x += currentRow.speed * currentRow.direction;
+                                break;
+                            }
+                        }
+                        // If in river and not on log, or drifted off screen bounds -> Game Over
+                        if (!onLog || Math.abs(chicken.position.x) > 11.5) {
+                            gameOver();
+                        }
+                    }
+
+                    // Check coin pickups
+                    for (let col of currentRow.collectibles) {
+                        if (!col.collected && Math.abs(chicken.position.x - col.mesh.position.x) < 0.6) {
+                            col.collected = true;
+                            col.mesh.visible = false;
+                            coins++;
+                            document.getElementById('coins-val').innerText = coins;
+                        }
+                    }
+                }
+
+                // Smooth camera follow
+                updateCameraPosition(chicken.position.x, chicken.position.z);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Initialize and start render loop
+        window.onload = function() {
+            init();
+            animate();
+        };
+    </script>
+</body>
+</html>
