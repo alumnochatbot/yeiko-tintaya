@@ -1,1 +1,1021 @@
 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Duck Hunt NES - Juego Retro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at center, #1e293b 0%, #090d16 100%);
+      color: #ffffff;
+      font-family: 'Press Start 2P', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    /* Contenedor de la pantalla estilo televisor retro */
+    .tv-frame {
+      position: relative;
+      width: 100%;
+      max-width: 760px;
+      aspect-ratio: 256 / 240;
+      background-color: #000;
+      border: 8px solid #27272a;
+      border-radius: 18px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), inset 0 0 15px rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    /* Líneas de escaneo sutiles tipo CRT */
+    .crt-lines {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%,
+        rgba(0, 0, 0, 0.22) 50%
+      );
+      background-size: 100% 4px;
+      z-index: 10;
+    }
+
+    /* Botones estilo arcade NES */
+    .arcade-btn {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px;
+      letter-spacing: 0.5px;
+      border: 2px solid #ffffff;
+      box-shadow: 0 4px 0 #000000;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background-color 0.15s ease;
+    }
+
+    .arcade-btn:hover {
+      filter: brightness(1.12);
+    }
+
+    .arcade-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #000000;
+    }
+  </style>
+</head>
+<body class="p-2 sm:p-4">
+
+  <!-- Encabezado y controles superiores -->
+  <header class="w-full max-w-[760px] flex flex-wrap items-center justify-between gap-2 mb-3 px-2 py-2.5 bg-zinc-900/90 border-2 border-zinc-700 rounded-xl shadow-lg">
+    <div class="flex items-center gap-2">
+      <span class="inline-block w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
+      <h1 class="text-xs sm:text-sm text-amber-400 tracking-wider">DUCK HUNT</h1>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <button id="btnMode" class="arcade-btn bg-blue-600 text-white px-3 py-2 rounded-lg">
+        MODO: 1 PATO
+      </button>
+      <button id="btnPose" class="arcade-btn bg-amber-600 text-white px-3 py-2 rounded-lg" title="Ver pose clásica del perro">
+        POSE FOTO
+      </button>
+      <button id="btnSound" class="arcade-btn bg-emerald-600 text-white px-3 py-2 rounded-lg">
+        SONIDO: ON
+      </button>
+      <button id="btnReset" class="arcade-btn bg-rose-600 text-white px-3 py-2 rounded-lg">
+        REINICIAR
+      </button>
+    </div>
+  </header>
+
+  <!-- Pantalla principal del juego -->
+  <main class="w-full flex justify-center">
+    <div id="tvContainer" class="tv-frame">
+      <canvas id="gameCanvas" width="256" height="240"></canvas>
+      <div class="crt-lines"></div>
+    </div>
+  </main>
+
+  <!-- Instrucciones inferiores -->
+  <footer class="w-full max-w-[760px] mt-3 px-3 py-2 bg-zinc-900/75 border border-zinc-800 rounded-xl text-center">
+    <p class="text-[9px] sm:text-[10px] text-zinc-300 leading-relaxed">
+      Haz <span class="text-amber-400">CLIC</span> o <span class="text-amber-400">TOCA LA PANTALLA</span> para disparar con la Zapper. Tienes <span class="text-sky-400">3 balas</span> por oleada.
+    </p>
+  </footer>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+
+    // ==================== MOTOR DE SONIDO 8-BIT (WEB AUDIO API) ====================
+    let audioCtx = null;
+    let soundEnabled = true;
+
+    function ensureAudio() {
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+      } catch (e) {
+        // Fallback silencioso si el navegador bloquea audio
+      }
+    }
+
+    function playTone(freq, type, duration, delay = 0, volume = 0.14, endFreq = null) {
+      if (!soundEnabled || !audioCtx) return;
+      try {
+        const now = audioCtx.currentTime + delay;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+        if (endFreq !== null) {
+          osc.frequency.linearRampToValueAtTime(endFreq, now + duration);
+        }
+        gain.gain.setValueAtTime(volume, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + duration);
+      } catch (e) {}
+    }
+
+    function sfxShoot() {
+      if (!soundEnabled || !audioCtx) return;
+      try {
+        const bufferSize = Math.floor(audioCtx.sampleRate * 0.14);
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.035));
+        }
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        const gain = audioCtx.createGain();
+        gain.gain.value = 0.35;
+        noise.connect(gain);
+        gain.connect(audioCtx.destination);
+        noise.start();
+        playTone(180, 'sawtooth', 0.11, 0, 0.25, 45);
+      } catch (e) {}
+    }
+
+    function sfxQuack() {
+      playTone(340, 'sawtooth', 0.06, 0, 0.07, 500);
+      playTone(480, 'sawtooth', 0.07, 0.06, 0.07, 290);
+    }
+
+    function sfxBark() {
+      playTone(220, 'square', 0.06, 0, 0.16, 420);
+      playTone(240, 'square', 0.07, 0.09, 0.16, 460);
+    }
+
+    function sfxDuckFall() {
+      playTone(780, 'triangle', 0.42, 0, 0.12, 160);
+      playTone(95, 'square', 0.09, 0.42, 0.2, 50);
+    }
+
+    function sfxDogCatch() {
+      const notes = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5];
+      const durs = [0.07, 0.07, 0.07, 0.13, 0.07, 0.24];
+      let t = 0;
+      notes.forEach((n, idx) => {
+        playTone(n, 'square', durs[idx], t, 0.13);
+        t += durs[idx] + 0.02;
+      });
+    }
+
+    function sfxDogLaugh() {
+      for (let i = 0; i < 4; i++) {
+        playTone(460, 'square', 0.055, i * 0.15, 0.11, 640);
+        playTone(390, 'square', 0.055, i * 0.15 + 0.065, 0.11, 250);
+      }
+    }
+
+    function sfxRoundClear() {
+      const notes = [392, 523.25, 659.25, 783.99, 659.25, 783.99, 1046.5];
+      const durs = [0.09, 0.09, 0.09, 0.14, 0.09, 0.12, 0.3];
+      let t = 0;
+      notes.forEach((n, idx) => {
+        playTone(n, 'square', durs[idx], t, 0.14);
+        t += durs[idx] + 0.02;
+      });
+    }
+
+    // ==================== PALETA DE COLORES Y SPRITES PIXEL ART ====================
+    const BASE_PALETTE = {
+      'K': '#000000', // Negro
+      'W': '#FFFFFF', // Blanco
+      'B': '#C6490E', // Marrón naranja del perro (fiel a la imagen)
+      'S': '#7F0B00', // Granate oscuro (sombra del cuerpo y lengua)
+      'R': '#F83800', // Rojo detalles
+      'G': '#00A800', // Verde cabeza de pato en vuelo
+      'L': '#80D010', // Verde lima claro
+      'P': '#FC7460', // Salmón/naranja de pico y patas del pato
+      'D': '#005200'  // Verde oscuro cabeza del pato atrapado
+    };
+
+    // Sprite 1:1 del perro celebrando con el pato (recreado píxel por píxel de tu imagen)
+    const SPRITE_DOG_CATCH = [
+      "............BB..BB........KK......DDD..PP..",
+      ".....KKKKK.BBBBBBBB.KKKK..KK.....DDKKD.PPPP",
+      "...KKKKKKKKBKKKKKKBKKKKKKKKK....DDDKWDPPPP.",
+      "..KKKKKKKKBKKWWWWKKBKKKKKKKK....DDWWWWDPP..",
+      "..KKKKKK..BKWWKWKWWKB..KKKKK....DDDDDDDP.PP",
+      ".KKKKK....BKWWKWKWWKB...........DDDDDDDD.PP",
+      ".KKKK.....BKWWWWWWWWB............DDDDDD....",
+      ".KKKK.....BKKWWWWWWKB.............BBBB.....",
+      ".KKKK.....BBKKKKKKKKB............BBBBSB....",
+      ".KKKK...WWWWKKKKKKWWWW.........BBBBBSB.....",
+      "..KKK..WWWWWWKKKKWWWWWW.......BBBBBSKBB....",
+      "..KKK..WWWKWWWWWWWWKWWW.....BBBBBBSSBKB....",
+      ".......WWWWWWKWWKWWWWWW....BBBBBBBBSSBB....",
+      ".......WWKWKKKKKKKKWKWW...BBBBBBBBBKBB.....",
+      "........WWWWKKKKKKWWWW...BBBBBBBBKBBBBK....",
+      "........BKKKKKKKKKKKKB..BBBBBBBBSKKKKKK....",
+      "........BBKKKKKKKKKKBBKBBBBBBBBSSKKKKKKK...",
+      "......BBBBKKKKKKKKKKBBBBBBBBBBSS.KKKKKKK...",
+      ".....BBBBBKSSSSSSSSKBBBBBBBBSS...KKKKKKKWK.",
+      "....BBBBBBKSSSKSSSSKBBBBBBBSS....KKKKKKKKW.",
+      "...BBBBBBBKSSSSSSSSKBBBBBBSS....KKKKKKKKWW.",
+      "..BBBBBBBBBKKKKKKKKBBBBBBSS.....KKKKKKKKWW.",
+      ".BBBBBBBBBBBKKKKKKBBBBBBSS......KKKKKWKKWW.",
+      ".BBBBBSBBBBBBBBBBBBBBBBBSS.....KKKKKKWWKWW.",
+      "BBBBBSBBBBBBBBBBBBBBBBBS.......KKKKK.KWKWW.",
+      "BBBBS.BBBBBBBBBBBBBBBBBS......KKKKK..KWWWWW",
+      "BBBS..BBBBBBBBBBBBBBBBBS......KKKK...KWWPPP",
+      "BBBB..BBBBBBBBBBBBBBBBBS.....KWKK...KKWPPP.",
+      "BBBSK.BBBBBBBBBBBBBBBBBS.....KWK....KKWPPPP",
+      "BBBSSB.BBBBBBBBBBBBBBBBS....KWWK...KKWWPPKP",
+      ".SKKSB.BBBBBBBBBBBBBBBBS....WWW....KWWWPPPP",
+      ".......BBBBBBBBBBBBBBBBS...........KKWW.PP.",
+      ".......SBBBBBBBBBBBBBBBS..........KKKWW....",
+      ".......SBBBBBBBBBBBBBBBS..........KKK......",
+      "........BBBBBBBBBBBBBBB...........K.K......"
+    ];
+
+    // Sprite del perro riéndose (Frame 1 y Frame 2)
+    const SPRITE_DOG_LAUGH_1 = [
+      "....KKKK..KKKK....",
+      "...KKKKBBBBKKKK...",
+      "..KKKBBWWWWBBKKK..",
+      "..KKBBWKWKWKWBKK..",
+      "..KKBWWWWWWWWBKK..",
+      "....WWWWKKKWWWW...",
+      "....WWWWWWWWWWW...",
+      "....KKWKKKKKWKK...",
+      ".....KKKRRRKKK....",
+      "....BBBBKKKKBBBB..",
+      "...BBBBWWBBWWBBBB.",
+      "...BBBBWWWWWWBBBB.",
+      "...BBBBBBBBBBBBBB.",
+      "....BBBBBBBBBBBB.."
+    ];
+
+    const SPRITE_DOG_LAUGH_2 = [
+      "..................",
+      "....KKKK..KKKK....",
+      "...KKKKBBBBKKKK...",
+      "..KKKBBWWWWBBKKK..",
+      "..KKBBWKWKWKWBKK..",
+      "..KKBWWWWWWWWBKK..",
+      "....WWWWKKKWWWW...",
+      "....WWWWWWWWWWW...",
+      "....KKWWWWWWWKK...",
+      ".....KKRRRRRKK....",
+      "...BBBBKKKKKBBBB..",
+      "..BBBBWWWWWWWBBBB.",
+      "...BBBBBBBBBBBBBB.",
+      "....BBBBBBBBBBBB.."
+    ];
+
+    const SPRITE_DUCK_FLY_1 = [
+      "........GGGG....",
+      ".......GGWWGG...",
+      ".......GGWKGGPPP",
+      "........GGGGPPP.",
+      "..KKKK...WW.....",
+      ".KKKKKKBBBBBB...",
+      "KKKKKKKKBBBBBB..",
+      "..KKKKBBBBBBBB..",
+      ".....BBBBBBBB...",
+      "......PP...PP..."
+    ];
+
+    const SPRITE_DUCK_FLY_2 = [
+      "........GGGG....",
+      ".......GGWWGG...",
+      ".......GGWKGGPPP",
+      "........GGGGPPP.",
+      ".........WW.....",
+      "......BBBBBBBB..",
+      "....KKKKKKKKBBBB",
+      "...KKKKKKKK..BB.",
+      "..KKKK..PP...PP.",
+      "................"
+    ];
+
+    const SPRITE_DUCK_SHOT = [
+      "....GGGG........",
+      "...GWWWWG.......",
+      "..GWWKKWWG..PPP.",
+      "..GWWKKWWG..PPP.",
+      "...GWWWWG.......",
+      "..BBBBBBBBBBBB..",
+      ".BBBBWWWWWWBBBB.",
+      "BBBBWWWWWWWWBBBB",
+      "..BBBBBBBBBBBB..",
+      "...PP......PP..."
+    ];
+
+    const SPRITE_DUCK_FALL = [
+      ".....PP..PP.....",
+      "....BBBBBBBB....",
+      "...BBBBWWBBBB...",
+      "...BBBWWWWBBB...",
+      "....KKKKKKKK....",
+      ".....GGWWGG.....",
+      ".....GGWKGG.....",
+      "......GGGG......",
+      ".......PP.......",
+      ".......PP......."
+    ];
+
+    function drawPixelMatrix(matrix, x, y, scale = 2, flipX = false, customColors = {}) {
+      const palette = { ...BASE_PALETTE, ...customColors };
+      const rows = matrix.length;
+      const cols = matrix[0].length;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const ch = matrix[r][c];
+          if (ch === '.' || ch === ' ') continue;
+          ctx.fillStyle = palette[ch] || '#FFFFFF';
+          const colIndex = flipX ? (cols - 1 - c) : c;
+          ctx.fillRect(
+            Math.floor(x + colIndex * scale),
+            Math.floor(y + r * scale),
+            scale,
+            scale
+          );
+        }
+      }
+    }
+
+    // ==================== VARIABLES DE ESTADO DEL JUEGO ====================
+    let gameMode = 1; // 1 o 2 patos simultáneos
+    let round = 1;
+    let score = 0;
+    let highScore = 12500;
+    let shotsLeft = 3;
+    let currentDuckCursor = 0;
+    let duckResults = new Array(10).fill(0); // 0: pendiente, 1: cazado, 2: escapado
+    let state = 'PLAYING'; // PLAYING, DOG_SCENE, POSE_SHOWCASE, ROUND_CLEAR, GAME_OVER
+    let stateTimer = 0;
+    let zapperFlashFrames = 0;
+    let lastShotPos = null;
+
+    let ducks = [];
+    let floatingTexts = [];
+    let clouds = [
+      { x: 24, y: 28, speed: 0.12 },
+      { x: 150, y: 46, speed: 0.08 }
+    ];
+
+    let dog = {
+      x: 92,
+      y: 162,
+      targetY: 96,
+      mode: 'CATCH', // CATCH o LAUGH
+      phase: 'RISE', // RISE, HOLD, HIDE
+      timer: 0,
+      caughtCount: 1
+    };
+
+    function getRequiredDucks(r) {
+      if (r <= 2) return 6;
+      if (r <= 4) return 7;
+      if (r <= 6) return 8;
+      return 9;
+    }
+
+    function createSingleDuck(slotIndex) {
+      const types = [
+        { points: 500, speedMult: 1.0, colors: {} }, // Pato verde/negro clásico
+        { points: 1000, speedMult: 1.22, colors: { 'G': '#0058F8', 'B': '#FC74B4' } }, // Pato azul
+        { points: 1500, speedMult: 1.42, colors: { 'G': '#F83800', 'B': '#000000' } }  // Pato rojo veloz
+      ];
+      const roll = Math.random();
+      const chosen = roll < 0.5 ? types[0] : (roll < 0.82 ? types[1] : types[2]);
+
+      const baseSpeed = (1.1 + Math.min(round * 0.14, 1.5)) * chosen.speedMult;
+      const angle = (0.22 + Math.random() * 0.55) * Math.PI;
+      const dirX = Math.random() < 0.5 ? 1 : -1;
+
+      return {
+        x: 36 + Math.random() * 165,
+        y: 142,
+        vx: Math.cos(angle) * baseSpeed * dirX,
+        vy: -Math.sin(angle) * baseSpeed,
+        w: 34,
+        h: 24,
+        state: 'FLYING', // FLYING, SHOT, FALLING, ESCAPING, DONE
+        timer: 0,
+        flightTicks: 0,
+        maxFlightTicks: Math.max(190, 340 - round * 12),
+        animFrame: 0,
+        points: chosen.points,
+        colors: chosen.colors,
+        slot: slotIndex
+      };
+    }
+
+    function spawnDuckWave() {
+      if (currentDuckCursor >= 10) {
+        finishRound();
+        return;
+      }
+
+      shotsLeft = 3;
+      ducks = [];
+      const count = Math.min(gameMode, 10 - currentDuckCursor);
+      for (let i = 0; i < count; i++) {
+        ducks.push(createSingleDuck(currentDuckCursor + i));
+      }
+      state = 'PLAYING';
+      sfxQuack();
+    }
+
+    function startDogScene(caughtCount, dropX) {
+      state = 'DOG_SCENE';
+      dog.x = Math.max(32, Math.min(130, dropX - 36));
+      dog.y = 162;
+      dog.targetY = 76;
+      dog.phase = 'RISE';
+      dog.timer = 0;
+      dog.caughtCount = caughtCount;
+
+      if (caughtCount > 0) {
+        dog.mode = 'CATCH';
+        sfxDogCatch();
+      } else {
+        dog.mode = 'LAUGH';
+        sfxDogLaugh();
+      }
+    }
+
+    function finishRound() {
+      const totalHits = duckResults.filter(r => r === 1).length;
+      const required = getRequiredDucks(round);
+
+      if (totalHits >= required) {
+        state = 'ROUND_CLEAR';
+        stateTimer = 130;
+        if (totalHits === 10) {
+          score += 10000;
+        } else {
+          score += 1000;
+        }
+        if (score > highScore) highScore = score;
+        sfxRoundClear();
+      } else {
+        state = 'GAME_OVER';
+        stateTimer = 0;
+        sfxDogLaugh();
+      }
+    }
+
+    function resetFullGame() {
+      round = 1;
+      score = 0;
+      currentDuckCursor = 0;
+      duckResults = new Array(10).fill(0);
+      floatingTexts = [];
+      spawnDuckWave();
+    }
+
+    // Modo especial para admirar la escena exacta de la imagen subida
+    function triggerIconicPose() {
+      ensureAudio();
+      state = 'POSE_SHOWCASE';
+      dog.x = 78;
+      dog.y = 74;
+      dog.mode = 'CATCH';
+      stateTimer = 180;
+      sfxDogCatch();
+    }
+
+    // ==================== INTERACCIÓN DE DISPARO (MOUSE Y TOUCH) ====================
+    function handleShoot(clientX, clientY) {
+      ensureAudio();
+
+      if (state === 'GAME_OVER') {
+        resetFullGame();
+        return;
+      }
+
+      if (state === 'POSE_SHOWCASE') {
+        spawnDuckWave();
+        return;
+      }
+
+      if (state !== 'PLAYING' || shotsLeft <= 0) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const gx = (clientX - rect.left) * scaleX;
+      const gy = (clientY - rect.top) * scaleY;
+
+      // Ignorar clics en el panel negro inferior del HUD
+      if (gy > 188) return;
+
+      shotsLeft--;
+      zapperFlashFrames = 3;
+      lastShotPos = { x: gx, y: gy, ttl: 12 };
+      sfxShoot();
+
+      // Verificar colisión generosa con algún pato en vuelo
+      let hitAny = false;
+      for (let i = 0; i < ducks.length; i++) {
+        const d = ducks[i];
+        if (d.state === 'FLYING' || d.state === 'ESCAPING') {
+          const pad = 10; // Hitbox cómodo para celular y mouse
+          if (
+            gx >= d.x - pad &&
+            gx <= d.x + d.w + pad &&
+            gy >= d.y - pad &&
+            gy <= d.y + d.h + pad
+          ) {
+            d.state = 'SHOT';
+            d.timer = 0;
+            duckResults[d.slot] = 1;
+            score += d.points;
+            if (score > highScore) highScore = score;
+
+            floatingTexts.push({
+              x: d.x + 4,
+              y: d.y,
+              text: String(d.points),
+              ttl: 45
+            });
+            hitAny = true;
+            break;
+          }
+        }
+      }
+
+      // Si se acabaron las balas, los patos restantes escapan
+      if (!hitAny && shotsLeft === 0) {
+        ducks.forEach(d => {
+          if (d.state === 'FLYING') {
+            d.state = 'ESCAPING';
+            d.vy = -2.3;
+          }
+        });
+      }
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      handleShoot(e.clientX, e.clientY);
+    });
+
+    // ==================== LÓGICA DE ACTUALIZACIÓN (UPDATE LOOP) ====================
+    function updateGame() {
+      // Actualizar textos flotantes de puntuación
+      for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        floatingTexts[i].y -= 0.35;
+        floatingTexts[i].ttl--;
+        if (floatingTexts[i].ttl <= 0) floatingTexts.splice(i, 1);
+      }
+
+      if (lastShotPos) {
+        lastShotPos.ttl--;
+        if (lastShotPos.ttl <= 0) lastShotPos = null;
+      }
+
+      if (state === 'POSE_SHOWCASE') {
+        stateTimer--;
+        if (stateTimer <= 0) {
+          spawnDuckWave();
+        }
+        return;
+      }
+
+      if (state === 'PLAYING') {
+        let allFinished = true;
+        let lastDropX = 110;
+
+        ducks.forEach(d => {
+          if (d.state === 'DONE') return;
+          allFinished = false;
+          d.timer++;
+
+          if (d.state === 'FLYING') {
+            d.flightTicks++;
+            d.x += d.vx;
+            d.y += d.vy;
+
+            if (d.timer % 7 === 0) d.animFrame = 1 - d.animFrame;
+            if (d.timer % 55 === 0) sfxQuack();
+
+            // Rebotes en bordes laterales y techo
+            if (d.x <= 8) {
+              d.x = 8;
+              d.vx = Math.abs(d.vx);
+            } else if (d.x + d.w >= 248) {
+              d.x = 248 - d.w;
+              d.vx = -Math.abs(d.vx);
+            }
+
+            if (d.y <= 10) {
+              d.y = 10;
+              d.vy = Math.abs(d.vy);
+            } else if (d.y >= 132) {
+              d.y = 132;
+              d.vy = -Math.abs(d.vy);
+            }
+
+            // Tiempo límite de vuelo alcanzado -> se escapa
+            if (d.flightTicks >= d.maxFlightTicks) {
+              d.state = 'ESCAPING';
+              d.vy = -2.4;
+            }
+          } else if (d.state === 'ESCAPING') {
+            d.x += d.vx * 0.5;
+            d.y += d.vy;
+            if (d.timer % 5 === 0) d.animFrame = 1 - d.animFrame;
+
+            if (d.y < -28) {
+              duckResults[d.slot] = 2; // Escapado
+              d.state = 'DONE';
+            }
+          } else if (d.state === 'SHOT') {
+            // Pausa dramática cuando recibe el disparo
+            if (d.timer >= 20) {
+              d.state = 'FALLING';
+              d.timer = 0;
+              sfxDuckFall();
+            }
+          } else if (d.state === 'FALLING') {
+            d.y += 3.1;
+            lastDropX = d.x;
+            if (d.y >= 152) {
+              d.state = 'DONE';
+            }
+          }
+        });
+
+        if (allFinished) {
+          const caughtInWave = ducks.filter(d => duckResults[d.slot] === 1).length;
+          currentDuckCursor += ducks.length;
+          startDogScene(caughtInWave, lastDropX);
+        }
+      } else if (state === 'DOG_SCENE') {
+        dog.timer++;
+        if (dog.phase === 'RISE') {
+          dog.y -= 2.2;
+          if (dog.y <= dog.targetY) {
+            dog.y = dog.targetY;
+            dog.phase = 'HOLD';
+            dog.timer = 0;
+          }
+        } else if (dog.phase === 'HOLD') {
+          if (dog.timer >= 52) {
+            dog.phase = 'HIDE';
+          }
+        } else if (dog.phase === 'HIDE') {
+          dog.y += 2.4;
+          if (dog.y >= 164) {
+            spawnDuckWave();
+          }
+        }
+      } else if (state === 'ROUND_CLEAR') {
+        stateTimer--;
+        if (stateTimer <= 0) {
+          round++;
+          currentDuckCursor = 0;
+          duckResults = new Array(10).fill(0);
+          spawnDuckWave();
+        }
+      }
+    }
+
+    // ==================== DIBUJADO DE ESCENARIO Y ELEMENTOS ====================
+    function drawTreeRight() {
+      const tx = 188;
+      const ty = 58;
+
+      // Sombra izquierda pixelada del árbol (verde oscuro) y follaje derecho (verde lima)
+      const foliageBlocks = [
+        { dx: 18, dy: 0, w: 24, h: 12 },
+        { dx: 10, dy: 10, w: 38, h: 16 },
+        { dx: 6, dy: 24, w: 46, h: 20 },
+        { dx: 2, dy: 42, w: 54, h: 22 },
+        { dx: 0, dy: 62, w: 58, h: 26 },
+        { dx: 4, dy: 86, w: 52, h: 18 }
+      ];
+
+      foliageBlocks.forEach(b => {
+        // Borde y sombra verde oscuro a la izquierda (igual que en la foto)
+        ctx.fillStyle = '#005000';
+        ctx.fillRect(tx + b.dx, ty + b.dy, b.w, b.h);
+
+        // Relleno verde brillante a la derecha
+        ctx.fillStyle = '#80D010';
+        ctx.fillRect(tx + b.dx + 12, ty + b.dy + 3, b.w - 16, b.h - 6);
+
+        // Píxeles de textura interna
+        ctx.fillStyle = '#005000';
+        ctx.fillRect(tx + b.dx + b.w - 10, ty + b.dy + b.h - 7, 4, 4);
+      });
+    }
+
+    function drawForegroundGrass() {
+      const baseTop = 142;
+
+      // Relleno sólido inferior de pasto verde lima
+      ctx.fillStyle = '#80D010';
+      ctx.fillRect(0, baseTop + 14, 256, 34);
+
+      // Picos dentados de pasto con brillo blanco izquierdo y sombra verde oscuro/negra (fiel a la imagen)
+      for (let x = 0; x < 256; x += 8) {
+        const bladeHeight = (x % 16 === 0) ? 18 : 12;
+        const yStart = baseTop + (18 - bladeHeight);
+
+        // Brillo blanco en el borde izquierdo de cada hoja
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(x, yStart, 2, bladeHeight);
+
+        // Cuerpo verde lima de la hoja
+        ctx.fillStyle = '#80D010';
+        ctx.fillRect(x + 2, yStart + 2, 4, bladeHeight + 4);
+
+        // Sombra verde oscuro
+        ctx.fillStyle = '#005000';
+        ctx.fillRect(x + 5, yStart + 4, 3, bladeHeight + 6);
+
+        // Detalles verticales oscuros en el pasto
+        if (x % 24 === 0) {
+          ctx.fillStyle = '#005000';
+          ctx.fillRect(x + 3, baseTop + 22, 2, 16);
+        } else if (x % 16 === 0) {
+          ctx.fillStyle = '#005000';
+          ctx.fillRect(x + 6, baseTop + 18, 2, 12);
+        }
+      }
+
+      // Panel inferior negro del marcador NES
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 188, 256, 52);
+    }
+
+    function drawRetroHUD() {
+      ctx.font = '8px "Press Start 2P", monospace';
+
+      // Indicador de Ronda R=X
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(14, 178, 42, 11);
+      ctx.fillStyle = '#80D010';
+      ctx.fillText(`R=${round}`, 18, 187);
+
+      // Recuadro SHOT (Balas disponibles)
+      ctx.strokeStyle = '#80D010';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(14, 194, 44, 34);
+      ctx.fillStyle = '#3CBCFC';
+      ctx.fillText('SHOT', 20, 224);
+
+      for (let i = 0; i < shotsLeft; i++) {
+        ctx.fillStyle = '#FC9838';
+        ctx.fillRect(21 + i * 11, 199, 6, 11);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(22 + i * 11, 197, 4, 3);
+      }
+
+      // Recuadro HIT (10 patos de la ronda)
+      ctx.strokeRect(64, 194, 114, 34);
+      ctx.fillStyle = '#80D010';
+      ctx.fillText('HIT', 68, 208);
+
+      for (let i = 0; i < 10; i++) {
+        if (duckResults[i] === 1) {
+          ctx.fillStyle = '#F83800'; // Pato cazado
+        } else if (duckResults[i] === 2) {
+          ctx.fillStyle = '#555555'; // Pato escapado
+        } else {
+          ctx.fillStyle = '#FFFFFF'; // Pendiente
+        }
+        ctx.fillRect(98 + i * 7, 200, 5, 7);
+      }
+
+      // Barra azul de mínimo requerido para pasar la ronda
+      const req = getRequiredDucks(round);
+      ctx.fillStyle = '#3CBCFC';
+      for (let i = 0; i < req; i++) {
+        ctx.fillRect(98 + i * 7, 214, 5, 4);
+      }
+
+      // Recuadro SCORE
+      ctx.strokeRect(184, 194, 58, 34);
+      ctx.fillStyle = '#FFFFFF';
+      const paddedScore = String(score).padStart(6, '0');
+      ctx.fillText(paddedScore, 189, 208);
+      ctx.fillStyle = '#80D010';
+      ctx.fillText('SCORE', 193, 224);
+    }
+
+    function renderGame() {
+      // Efecto auténtico de pistola NES Zapper al disparar (1 frame negro + recuadros blancos en patos)
+      if (zapperFlashFrames > 0) {
+        zapperFlashFrames--;
+        if (zapperFlashFrames === 2) {
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(0, 0, 256, 240);
+          return;
+        } else if (zapperFlashFrames === 1) {
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(0, 0, 256, 240);
+          ctx.fillStyle = '#FFFFFF';
+          ducks.forEach(d => {
+            if (d.state === 'FLYING' || d.state === 'SHOT') {
+              ctx.fillRect(d.x - 2, d.y - 2, d.w + 4, d.h + 4);
+            }
+          });
+          return;
+        }
+      }
+
+      // Color del cielo (Rosa claro si un pato se está escapando "FLY AWAY", azul celeste normal en caso contrario)
+      const isEscaping = state === 'PLAYING' && ducks.some(d => d.state === 'ESCAPING');
+      ctx.fillStyle = isEscaping ? '#F8B8B8' : '#3CBCFC';
+      ctx.fillRect(0, 0, 256, 188);
+
+      // Dibujar patos detrás del pasto
+      if (state === 'PLAYING') {
+        ducks.forEach(d => {
+          if (d.state === 'DONE') return;
+          const flipX = d.vx < 0;
+          if (d.state === 'FLYING' || d.state === 'ESCAPING') {
+            const spr = d.animFrame === 0 ? SPRITE_DUCK_FLY_1 : SPRITE_DUCK_FLY_2;
+            drawPixelMatrix(spr, d.x, d.y, 2, flipX, d.colors);
+          } else if (d.state === 'SHOT') {
+            drawPixelMatrix(SPRITE_DUCK_SHOT, d.x, d.y, 2, false, d.colors);
+          } else if (d.state === 'FALLING') {
+            drawPixelMatrix(SPRITE_DUCK_FALL, d.x + 4, d.y, 2, (Math.floor(d.y / 6) % 2 === 0), d.colors);
+          }
+        });
+      }
+
+      // Dibujar al perro (detrás del borde del pasto para que emerja de la hierba como en la imagen)
+      if (state === 'DOG_SCENE' || state === 'POSE_SHOWCASE') {
+        if (dog.mode === 'CATCH') {
+          drawPixelMatrix(SPRITE_DOG_CATCH, dog.x, dog.y, 2.15, false);
+        } else {
+          const laughSprite = (Math.floor(dog.timer / 6) % 2 === 0)
+            ? SPRITE_DOG_LAUGH_1
+            : SPRITE_DOG_LAUGH_2;
+          drawPixelMatrix(laughSprite, dog.x + 10, dog.y + 14, 3.6, false);
+        }
+      }
+
+      // Dibujar el árbol de la derecha y el pasto en primer plano
+      drawTreeRight();
+      drawForegroundGrass();
+
+      // Puntuaciones flotantes
+      ctx.font = '8px "Press Start 2P", monospace';
+      floatingTexts.forEach(ft => {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText(ft.text, Math.floor(ft.x), Math.floor(ft.y));
+      });
+
+      // Indicador visual del disparo
+      if (lastShotPos) {
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.strokeRect(lastShotPos.x - 4, lastShotPos.y - 4, 8, 8);
+      }
+
+      // Carteles de estado (FLY AWAY, ROUND CLEAR, POSE, GAME OVER)
+      if (isEscaping) {
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(78, 32, 100, 18);
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.strokeRect(78, 32, 100, 18);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText('FLY AWAY', 96, 44);
+      }
+
+      if (state === 'POSE_SHOWCASE') {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+        ctx.fillRect(28, 12, 200, 26);
+        ctx.strokeStyle = '#80D010';
+        ctx.strokeRect(28, 12, 200, 26);
+        ctx.fillStyle = '#FC9838';
+        ctx.fillText('ESCENA CLASICA NES', 56, 24);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText('TOCA PARA SEGUIR', 64, 34);
+      }
+
+      if (state === 'ROUND_CLEAR') {
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(58, 55, 140, 34);
+        ctx.strokeStyle = '#80D010';
+        ctx.strokeRect(58, 55, 140, 34);
+        ctx.fillStyle = '#80D010';
+        ctx.fillText(`RONDA ${round} SUPERADA`, 65, 70);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText('PREPARATE...', 82, 82);
+      }
+
+      if (state === 'GAME_OVER') {
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(44, 48, 168, 54);
+        ctx.strokeStyle = '#F83800';
+        ctx.strokeRect(44, 48, 168, 54);
+        ctx.fillStyle = '#F83800';
+        ctx.fillText('GAME OVER', 92, 65);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText(`RECORD: ${highScore}`, 74, 80);
+        ctx.fillStyle = '#80D010';
+        ctx.fillText('TOCA PARA JUGAR', 68, 94);
+      }
+
+      drawRetroHUD();
+    }
+
+    // ==================== CONTROLES DE LA INTERFAZ Y BUCLE PRINCIPAL ====================
+    const btnMode = document.getElementById('btnMode');
+    const btnPose = document.getElementById('btnPose');
+    const btnSound = document.getElementById('btnSound');
+    const btnReset = document.getElementById('btnReset');
+
+    btnMode.addEventListener('click', () => {
+      ensureAudio();
+      gameMode = gameMode === 1 ? 2 : 1;
+      btnMode.textContent = `MODO: ${gameMode} ${gameMode === 1 ? 'PATO' : 'PATOS'}`;
+      resetFullGame();
+    });
+
+    btnPose.addEventListener('click', () => {
+      triggerIconicPose();
+    });
+
+    btnSound.addEventListener('click', () => {
+      soundEnabled = !soundEnabled;
+      btnSound.textContent = `SONIDO: ${soundEnabled ? 'ON' : 'OFF'}`;
+      btnSound.className = soundEnabled
+        ? 'arcade-btn bg-emerald-600 text-white px-3 py-2 rounded-lg'
+        : 'arcade-btn bg-zinc-600 text-white px-3 py-2 rounded-lg';
+    });
+
+    btnReset.addEventListener('click', () => {
+      ensureAudio();
+      sfxBark();
+      resetFullGame();
+    });
+
+    function gameLoop() {
+      updateGame();
+      renderGame();
+      requestAnimationFrame(gameLoop);
+    }
+
+    window.onload = function () {
+      // Mostramos un instante la pose icónica de tu imagen al abrir y luego empieza la cacería
+      triggerIconicPose();
+      stateTimer = 95;
+      gameLoop();
+    };
+  </script>
+</body>
+</html>
