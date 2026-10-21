@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marcador WTT - Final Dobles</title>
+    <!-- Tailwind CSS para un diseño moderno y fluido -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap');
+        .font-digital {
+            font-family: 'Orbitron', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col justify-between select-none">
+
+    <!-- Encabezado / Información del Torneo -->
+    <header class="bg-slate-800 p-4 shadow-md text-center border-b border-slate-700">
+        <h1 class="text-xl md:text-2xl font-bold text-amber-500 tracking-wide uppercase">WTT Contender Laško 2021</h1>
+        <p class="text-xs md:text-sm text-slate-400 mt-1">Final de Dobles Masculinos • Sports Hall Tri Lilije</p>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="flex-grow flex flex-col items-center justify-center p-4 max-w-4xl mx-auto w-full gap-6">
+        
+        <!-- Representación Visual del Juego (Mesa interactiva basada en la imagen) -->
+        <div class="w-full bg-slate-950 rounded-2xl border border-slate-800 p-4 shadow-inner flex flex-col items-center relative overflow-hidden">
+            <div class="text-[10px] text-slate-600 font-bold uppercase tracking-widest mb-2">Vista de Campo (Simulador)</div>
+            
+            <!-- Mesa de Tenis de Mesa Estilizada -->
+            <div class="w-full max-w-lg aspect-[16/9] bg-blue-600 rounded border-4 border-white relative shadow-lg flex items-center justify-center">
+                <!-- Línea Central (Dobles) -->
+                <div class="absolute inset-x-0 h-0.5 bg-white top-1/2 -translate-y-1/2 opacity-80"></div>
+                <!-- Red de Tenis de Mesa -->
+                <div class="absolute inset-y-0 w-2 bg-slate-800/90 left-1/2 -translate-x-1/2 flex flex-col justify-between items-center shadow border-x border-slate-450 z-10">
+                    <div class="w-4 h-1 bg-slate-700 -mt-1 rounded-sm"></div>
+                    <div class="w-4 h-1 bg-slate-700 -mb-1 rounded-sm"></div>
+                </div>
+
+                <!-- Lado Izquierdo: Japón (Naranja) -->
+                <div class="absolute left-1/4 -translate-x-1/2 flex flex-col items-center gap-1 z-20">
+                    <div class="flex gap-2">
+                        <div class="w-6 h-6 rounded-full bg-orange-500 border border-white flex items-center justify-center text-[9px] font-bold text-white shadow">JPN</div>
+                        <div class="w-6 h-6 rounded-full bg-orange-500 border border-white flex items-center justify-center text-[9px] font-bold text-white shadow">JPN</div>
+                    </div>
+                    <span class="text-[10px] font-bold bg-slate-900/80 px-1.5 py-0.5 rounded text-slate-200">Tanaka / Kizukuri</span>
+                </div>
+
+                <!-- Lado Derecho: China (Oscuro/Rojo) -->
+                <div class="absolute right-1/4 translate-x-1/2 flex flex-col items-center gap-1 z-20">
+                    <div class="flex gap-2">
+                        <div class="w-6 h-6 rounded-full bg-red-600 border border-white flex items-center justify-center text-[9px] font-bold text-white shadow">CHN</div>
+                        <div class="w-6 h-6 rounded-full bg-red-600 border border-white flex items-center justify-center text-[9px] font-bold text-white shadow">CHN</div>
+                    </div>
+                    <span class="text-[10px] font-bold bg-slate-900/80 px-1.5 py-0.5 rounded text-slate-200">Zhou Q.H. / Lin G.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tablero de Marcador Principal -->
+        <div class="bg-slate-800 border-2 border-slate-700 rounded-2xl shadow-2xl p-6 w-full grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+            
+            <!-- Equipo A: China -->
+            <div class="flex flex-col items-center text-center order-1">
+                <span class="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-2 shadow">CHN</span>
+                <h2 class="text-xl font-bold tracking-tight">Zhou Qihao</h2>
+                <h2 class="text-xl font-bold tracking-tight text-slate-300">Lin Gaoyuan</h2>
+                <div class="mt-4 font-digital text-6xl md:text-7xl text-red-500 bg-black px-6 py-2 rounded-xl border border-slate-800 shadow-inner" id="scoreA">0</div>
+                <div class="flex gap-2 mt-4">
+                    <button onclick="changeScore('A', 1)" class="bg-slate-700 hover:bg-slate-600 active:scale-95 text-white font-bold px-4 py-2 rounded-lg transition shadow-md touch-manipulation">+1</button>
+                    <button onclick="changeScore('A', -1)" class="bg-slate-700 hover:bg-slate-600 active:scale-95 text-slate-400 font-bold px-4 py-2 rounded-lg transition shadow-md touch-manipulation">-1</button>
+                </div>
+            </div>
+
+            <!-- Centro: Sets y Estado -->
+            <div class="flex flex-col items-center justify-center bg-slate-850 p-4 rounded-xl border border-slate-700/50 order-3 md:order-2">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-widest">Sets Ganados</span>
+                <div class="flex items-center gap-4 mt-2">
+                    <span id="setsA" class="font-digital text-3xl text-amber-400 bg-black/50 px-3 py-1 rounded border border-slate-800">0</span>
+                    <span class="text-slate-500 font-bold text-sm">VS</span>
+                    <span id="setsB" class="font-digital text-3xl text-amber-400 bg-black/50 px-3 py-1 rounded border border-slate-800">0</span>
+                </div>
+                <div id="statusMessage" class="text-sm text-amber-500 font-medium mt-4 text-center bg-slate-900/50 px-4 py-1.5 rounded-full border border-slate-800">
+                    ¡Partido en curso!
+                </div>
+            </div>
+
+            <!-- Equipo B: Japón -->
+            <div class="flex flex-col items-center text-center order-2 md:order-3">
+                <span class="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-2 shadow">JPN</span>
+                <h2 class="text-xl font-bold tracking-tight">Yuta Tanaka</h2>
+                <h2 class="text-xl font-bold tracking-tight text-slate-300">Yuto Kizukuri</h2>
+                <div class="mt-4 font-digital text-6xl md:text-7xl text-blue-500 bg-black px-6 py-2 rounded-xl border border-slate-800 shadow-inner" id="scoreB">0</div>
+                <div class="flex gap-2 mt-4">
+                    <button onclick="changeScore('B', 1)" class="bg-slate-700 hover:bg-slate-600 active:scale-95 text-white font-bold px-4 py-2 rounded-lg transition shadow-md touch-manipulation">+1</button>
+                    <button onclick="changeScore('B', -1)" class="bg-slate-700 hover:bg-slate-600 active:scale-95 text-slate-400 font-bold px-4 py-2 rounded-lg transition shadow-md touch-manipulation">-1</button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Controles Globales -->
+        <div class="flex flex-wrap justify-center gap-4 w-full">
+            <button onclick="endSet()" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-bold px-6 py-3 rounded-xl transition shadow-lg touch-manipulation flex items-center gap-2">
+                Concluir Set
+            </button>
+            <button onclick="resetAll()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 active:scale-95 text-slate-300 font-medium px-6 py-3 rounded-xl transition shadow-md touch-manipulation">
+                Reiniciar Todo
+            </button>
+        </div>
+
+        <!-- Historial de Sets -->
+        <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-4 w-full max-w-md">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 text-center">Historial de Sets</h3>
+            <div id="setHistory" class="text-sm text-center text-slate-300 space-y-1">
+                <span class="text-slate-500 italic block py-1">No hay sets registrados aún.</span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Pie de página -->
+    <footer class="bg-slate-950 p-3 text-center text-xs text-slate-500 border-t border-slate-900">
+        Simulador visual interactivo. Puedes probar el juego activando la vista previa HTML.
+    </footer>
+
+    <!-- Lógica del Marcador Interactivo -->
+    <script>
+        let scoreA = 0;
+        let scoreB = 0;
+        let setsA = 0;
+        let setsB = 0;
+        let history = [];
+
+        function updateDisplay() {
+            document.getElementById('scoreA').innerText = scoreA;
+            document.getElementById('scoreB').innerText = scoreB;
+            document.getElementById('setsA').innerText = setsA;
+            document.getElementById('setsB').innerText = setsB;
+            
+            const msgBox = document.getElementById('statusMessage');
+            if (scoreA >= 10 && scoreB >= 10) {
+                msgBox.innerText = `¡Deuce! Ventaja por 2 puntos`;
+            } else if (scoreA >= 11 || scoreB >= 11) {
+                msgBox.innerText = `Punto de Set disponible`;
+            } else {
+                msgBox.innerText = `¡Partido en curso!`;
+            }
+        }
+
+        function changeScore(team, val) {
+            if (team === 'A') {
+                scoreA = Math.max(0, scoreA + val);
+            } else {
+                scoreB = Math.max(0, scoreB + val);
+            }
+            updateDisplay();
+        }
+
+        function endSet() {
+            if ((scoreA >= 11 || scoreB >= 11) && Math.abs(scoreA - scoreB) >= 2) {
+                if (scoreA > scoreB) setsA++; else setsB++;
+                
+                history.push(`Set ${history.length + 1}: CHN ${scoreA} - ${scoreB} JPN`);
+                renderHistory();
+
+                scoreA = 0;
+                scoreB = 0;
+                updateDisplay();
+
+                checkMatchWinner();
+            } else {
+                showTemporaryMessage("Para cerrar el set se necesitan al menos 11 puntos y una diferencia mínima de 2.");
+            }
+        }
+
+        function checkMatchWinner() {
+            if (setsA === 3) {
+                document.getElementById('statusMessage').innerText = "¡Ganador del Partido: CHINA (3-0)!";
+            } else if (setsB === 3) {
+                document.getElementById('statusMessage').innerText = "¡Ganador del Partido: JAPÓN!";
+            }
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('setHistory');
+            if (history.length === 0) {
+                container.innerHTML = '<span class="text-slate-500 italic block py-1">No hay sets registrados aún.</span>';
+            } else {
+                container.innerHTML = history.map(item => `<div class="bg-slate-900/60 py-1 px-3 rounded text-amber-400 font-mono my-1">${item}</div>`).join('');
+            }
+        }
+
+        function showTemporaryMessage(text) {
+            const msgBox = document.getElementById('statusMessage');
+            const original = msgBox.innerText;
+            msgBox.innerText = text;
+            msgBox.classList.add('text-red-400');
+            setTimeout(() => {
+                msgBox.innerText = original;
+                msgBox.classList.remove('text-red-400');
+            }, 4000);
+        }
+
+        function resetAll() {
+            scoreA = 0;
+            scoreB = 0;
+            setsA = 0;
+            setsB = 0;
+            history = [];
+            renderHistory();
+            updateDisplay();
+            document.getElementById('statusMessage').innerText = "¡Partido en curso!";
+        }
+    </script>
+</body>
+</html>
