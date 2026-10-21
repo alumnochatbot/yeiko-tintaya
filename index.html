@@ -1503,6 +1503,17 @@
         demoPrompt: "App de Trivia conectada a https://alumnochatbot.github.io/yeiko-tintaya/trivia. Desafíos de preguntas interactivas con puntuación y retroalimentación inmediata."
       },
       {
+        id: "proj-pingpong",
+        title: "Marcador WTT - Final Dobles",
+        category: "juegos",
+        categoryLabel: "Juegos & Simulación",
+        desc: "Marcador interactivo de Ping Pong simulando la Final Dobles del WTT Contender Laško 2021.",
+        icon: "🏓",
+        tags: ["Ping Pong", "Marcador", "Simulación", "Deportes"],
+        url: "pingpong/index.html",
+        demoPrompt: "Simulador interactivo del marcador WTT listo. Puedes probar los controles de puntuación de los equipos."
+      },
+      {
         id: "proj-1",
         title: "Minecraft AI World",
         category: "juegos",
@@ -1603,6 +1614,11 @@
             // Asegurar que la nueva Trivia esté integrada automáticamente al catálogo existente
             if (!parsed.some(p => p.id === "proj-trivia" || (p.url && p.url.includes("trivia")))) {
               parsed.unshift(DEFAULT_PROJECTS[0]);
+              saveProjects(parsed);
+            }
+            // Asegurar que pingpong esté integrado automáticamente al catálogo existente
+            if (!parsed.some(p => p.id === "proj-pingpong" || (p.url && p.url.includes("pingpong")))) {
+              parsed.unshift(DEFAULT_PROJECTS.find(p => p.id === "proj-pingpong"));
               saveProjects(parsed);
             }
             return parsed;
