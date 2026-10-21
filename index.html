@@ -1503,6 +1503,17 @@
         demoPrompt: "App de Trivia conectada a https://alumnochatbot.github.io/yeiko-tintaya/trivia. Desafíos de preguntas interactivas con puntuación y retroalimentación inmediata."
       },
       {
+        id: "proj-pingpong",
+        title: "Ping Pong Marcador WTT",
+        category: "juegos",
+        categoryLabel: "Juegos & Simulación",
+        desc: "Marcador interactivo para torneos de tenis de mesa (WTT Contender).",
+        icon: "🏓",
+        tags: ["Ping Pong", "Deportes", "Marcador"],
+        url: "pingpong/",
+        demoPrompt: "Iniciando simulador de marcador de Ping Pong..."
+      },
+      {
         id: "proj-1",
         title: "Minecraft AI World",
         category: "juegos",
@@ -1598,11 +1609,31 @@
       try {
         const stored = localStorage.getItem(CONFIG.storageKey);
         if (stored) {
-          const parsed = JSON.parse(stored);
+          let parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
+            let updated = false;
             // Asegurar que la nueva Trivia esté integrada automáticamente al catálogo existente
             if (!parsed.some(p => p.id === "proj-trivia" || (p.url && p.url.includes("trivia")))) {
-              parsed.unshift(DEFAULT_PROJECTS[0]);
+              const triviaProj = DEFAULT_PROJECTS.find(p => p.id === "proj-trivia");
+              if (triviaProj) parsed.unshift(triviaProj);
+              updated = true;
+            }
+            // Asegurar que Ping Pong esté integrado
+            if (!parsed.some(p => p.id === "proj-pingpong" || (p.url && p.url.includes("pingpong")))) {
+              const pingpongProj = DEFAULT_PROJECTS.find(p => p.id === "proj-pingpong");
+              if (pingpongProj) {
+                  // Insert after trivia if it exists, or at beginning
+                  const triviaIndex = parsed.findIndex(p => p.id === "proj-trivia");
+                  if (triviaIndex !== -1) {
+                      parsed.splice(triviaIndex + 1, 0, pingpongProj);
+                  } else {
+                      parsed.unshift(pingpongProj);
+                  }
+              }
+              updated = true;
+            }
+
+            if (updated) {
               saveProjects(parsed);
             }
             return parsed;
