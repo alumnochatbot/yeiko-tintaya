@@ -1492,6 +1492,17 @@
     // Catálogo inicial con la estructura de proyectos y juegos adaptada a Yeiko Tintaya
     const DEFAULT_PROJECTS = [
       {
+        id: "proj-bomberman",
+        title: "Bomberman Retro",
+        category: "juegos",
+        categoryLabel: "Juegos & Simulación",
+        desc: "Juego clásico de Bomberman con laberintos destructibles, bombas, power-ups, enemigos inteligentes y controles táctiles/teclado.",
+        icon: "💣",
+        tags: ["Bomberman", "Retro", "HTML5 Canvas", "Juegos"],
+        url: "bomberman/index.html",
+        demoPrompt: "Inicializando Bomberman Retro... Generando laberinto, distribuyendo power-ups y desplegando enemigos."
+      },
+      {
         id: "proj-trivia",
         title: "Trivia Cambridge",
         category: "educacion",
@@ -1602,7 +1613,14 @@
           if (Array.isArray(parsed) && parsed.length > 0) {
             // Asegurar que la nueva Trivia esté integrada automáticamente al catálogo existente
             if (!parsed.some(p => p.id === "proj-trivia" || (p.url && p.url.includes("trivia")))) {
-              parsed.unshift(DEFAULT_PROJECTS[0]);
+              const triviaProj = DEFAULT_PROJECTS.find(p => p.id === "proj-trivia");
+              if (triviaProj) parsed.unshift(triviaProj);
+              saveProjects(parsed);
+            }
+            // Asegurar que Bomberman esté integrado automáticamente
+            if (!parsed.some(p => p.id === "proj-bomberman" || (p.url && p.url.includes("bomberman")))) {
+              const bombermanProj = DEFAULT_PROJECTS.find(p => p.id === "proj-bomberman");
+              if (bombermanProj) parsed.unshift(bombermanProj);
               saveProjects(parsed);
             }
             return parsed;
