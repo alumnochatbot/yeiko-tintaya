@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bomberman Retro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        body {
+            font-family: 'Press Start 2P', monospace;
+            background-color: #1a1a2e;
+            color: #ffffff;
+            user-select: none;
+        }
+        canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            border: 4px solid #4a5568;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- Header / HUD -->
+    <div class="mb-4 w-full max-w-xl flex justify-between items-center bg-gray-900 border-4 border-gray-700 p-3 rounded-lg shadow-lg">
+        <div class="flex items-center space-x-2 text-xs md:text-sm">
+            <span class="text-yellow-400">⏱️ TIME:</span>
+            <span id="timer" class="text-white">02:00</span>
+        </div>
+        <div class="flex items-center space-x-4 text-xs md:text-sm">
+            <div class="flex items-center space-x-1">
+                <span class="w-3 h-3 bg-white rounded-full inline-block"></span>
+                <span id="score-val" class="text-green-400">0</span>
+            </div>
+            <div class="flex items-center space-x-1">
+                <span class="text-red-400">❤️</span>
+                <span id="lives-val" class="text-white">3</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game Canvas Container -->
+    <div class="relative flex flex-col items-center">
+        <canvas id="gameCanvas" width="480" height="416"></canvas>
+        
+        <!-- Retro Message Box Overlay -->
+        <div id="messageBox" class="hidden absolute inset-0 bg-black/80 flex flex-col items-center justify-center p-6 text-center rounded-lg">
+            <h2 id="msgTitle" class="text-xl md:text-2xl mb-4 text-yellow-400">GAME OVER</h2>
+            <p id="msgText" class="text-xs md:text-sm mb-6 text-gray-300">Press Restart to play again!</p>
+            <button onclick="restartGame()" class="px-6 py-3 bg-red-600 hover:bg-red-500 text-white border-2 border-white rounded shadow-md text-xs transition transform hover:scale-105 active:scale-95 cursor-pointer">
+                PLAY AGAIN
+            </button>
+        </div>
+    </div>
+
+    <!-- Touch / Mobile Controls -->
+    <div class="mt-6 grid grid-cols-3 gap-2 max-w-xs w-full md:hidden">
+        <div></div>
+        <button ontouchstart="handleTouch('up')" class="bg-gray-700 active:bg-gray-500 p-4 rounded text-center font-bold border-2 border-gray-500">⬆️</button>
+        <div></div>
+        <button ontouchstart="handleTouch('left')" class="bg-gray-700 active:bg-gray-500 p-4 rounded text-center font-bold border-2 border-gray-500">⬅️</button>
+        <button ontouchstart="handleTouch('bomb')" class="bg-red-600 active:bg-red-500 p-4 rounded text-center font-bold border-2 border-red-400 text-xs">💣</button>
+        <button ontouchstart="handleTouch('right')" class="bg-gray-700 active:bg-gray-500 p-4 rounded text-center font-bold border-2 border-gray-500">➡️</button>
+        <div></div>
+        <button ontouchstart="handleTouch('down')" class="bg-gray-700 active:bg-gray-500 p-4 rounded text-center font-bold border-2 border-gray-500">⬇️</button>
+        <div></div>
+    </div>
+
+    <!-- Keyboard Instructions -->
+    <div class="mt-4 text-center text-[10px] md:text-xs text-gray-400">
+        Controls: <span class="text-yellow-300">Arrow Keys</span> or <span class="text-yellow-300">W, A, S, D</span> to Move | <span class="text-yellow-300">Spacebar</span> to Drop Bomb
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const TILE_SIZE = 32;
+        const COLS = 15;
+        const ROWS = 13;
+
+        // Game States: 0 = Playing, 1 = Won, 2 = Lost
+        let gameState = 0;
+        let score = 0;
+        let lives = 3;
+        let timeLeft = 120; // 2 minutes
+
+        // Map types: 0 = Empty/Grass, 1 = Indestructible Wall, 2 = Destructible Brick
+        let map = [];
+        let bombs = [];
+        let explosions = [];
+        let powerups = [];
+        let enemies = [];
+
+        let player = {
+            x: TILE_SIZE,
+            y: TILE_SIZE,
+            size: 24,
+            speed: 2,
+            bombLimit: 1,
+            activeBombs: 0,
+            power: 2,
+            color: '#FFFFFF', // White bomberman suit
+            accent: '#0055FF'
+        };
+
+        // Initialize map layout (classic grid with border and alternating indestructible blocks)
+        function initMap() {
+            map = [];
+            for (let r = 0; r < ROWS; r++) {
+                let row = [];
+                for (let c = 0; c < COLS; c++) {
+                    // Outer walls
+                    if (r === 0 || r === ROWS - 1 || c === 0 || c === COLS - 1) {
+                        row.push(1);
+                    } 
+                    // Internal grid indestructible pillars
+                    else if (r % 2 === 0 && c % 2 === 0) {
+                        row.push(1);
+                    } 
+                    // Spawn safety zone for player (top-left)
+                    else if ((r === 1 && c === 1) || (r === 1 && c === 2) || (r === 2 && c === 1)) {
+                        row.push(0);
+                    } 
+                    // Random destructible bricks
+                    else {
+                        // 65% chance of brick
+                        if (Math.random() < 0.65) {
+                            row.push(2);
+                        } else {
+                            row.push(0);
+                        }
+                    }
+                }
+                map.push(row);
+            }
+        }
+
+        // Spawn simple AI enemies
+        function initEnemies() {
+            enemies = [
+                { x: 13 * TILE_SIZE, y: 1 * TILE_SIZE, dx: 0, dy: 1, color: '#FF3333', type: 'red' },
+                { x: 13 * TILE_SIZE, y: 11 * TILE_SIZE, dx: -1, dy: 0, color: '#33FF33', type: 'green' },
+                { x: 7 * TILE_SIZE, y: 6 * TILE_SIZE, dx: 1, dy: 0, color: '#FFAA33', type: 'orange' }
+            ];
+        }
+
+        function restartGame() {
+            gameState = 0;
+            score = 0;
+            lives = 3;
+            timeLeft = 120;
+            player.x = TILE_SIZE;
+            player.y = TILE_SIZE;
+            player.bombLimit = 1;
+            player.activeBombs = 0;
+            player.power = 2;
+            document.getElementById('messageBox').classList.add('hidden');
+            initMap();
+            initEnemies();
+            bombs = [];
+            explosions = [];
+            powerups = [];
+        }
+
+        // Input Handling
+        const keys = {};
+        window.addEventListener('keydown', e => {
+            keys[e.code] = true;
+            if (e.code === 'Space' && gameState === 0) {
+                dropBomb();
+                e.preventDefault();
+            }
+        });
+        window.addEventListener('keyup', e => {
+            keys[e.code] = false;
+        });
+
+        function handleTouch(action) {
+            if (gameState !== 0) return;
+            if (action === 'bomb') {
+                dropBomb();
+            } else {
+                // Quick directional bump on touch
+                let step = TILE_SIZE;
+                if (action === 'up') tryMove(player.x, player.y - step);
+                if (action === 'down') tryMove(player.x, player.y + step);
+                if (action === 'left') tryMove(player.x - step, player.y);
+                if (action === 'right') tryMove(player.x + step, player.y);
+            }
+        }
+
+        // Collision box check against map
+        function isSolid(x, y, size) {
+            let leftTile = Math.floor(x / TILE_SIZE);
+            let rightTile = Math.floor((x + size - 1) / TILE_SIZE);
+            let topTile = Math.floor(y / TILE_SIZE);
+            let bottomTile = Math.floor((y + size - 1) / TILE_SIZE);
+
+            if (leftTile < 0 || rightTile >= COLS || topTile < 0 || bottomTile >= ROWS) return true;
+
+            return map[topTile][leftTile] > 0 || 
+                   map[topTile][rightTile] > 0 || 
+                   map[bottomTile][leftTile] > 0 || 
+                   map[bottomTile][rightTile] > 0;
+        }
+
+        function tryMove(newX, newY) {
+            // Smooth sliding collision per axis
+            let size = player.size;
+            // Check X axis
+            if (!isSolid(newX, player.y, size)) {
+                player.x = newX;
+            }
+            // Check Y axis
+            if (!isSolid(player.x, newY, size)) {
+                player.y = newY;
+            }
+        }
+
+        function dropBomb() {
+            if (player.activeBombs >= player.bombLimit) return;
+            let gridX = Math.floor((player.x + player.size/2) / TILE_SIZE);
+            let gridY = Math.floor((player.y + player.size/2) / TILE_SIZE);
+
+            // Check if bomb already exists at tile
+            let exists = bombs.some(b => b.x === gridX && b.y === gridY);
+            if (!exists) {
+                bombs.push({
+                    x: gridX,
+                    y: gridY,
+                    timer: 150, // frames (~2.5 seconds)
+                    range: player.power
+                });
+                player.activeBombs++;
+            }
+        }
+
+        // Explode Bomb & Spread Fire
+        function explodeBomb(bomb) {
+            player.activeBombs = Math.max(0, player.activeBombs - 1);
+            let cx = bomb.x;
+            let cy = bomb.y;
+
+            let fireTiles = [{x: cx, y: cy}];
+
+            // Directions: Up, Down, Left, Right
+            let dirs = [{dx: 0, dy: -1}, {dx: 0, dy: 1}, {dx: -1, dy: 0}, {dx: 1, dy: 0}];
+
+            dirs.forEach(d => {
+                for (let i = 1; i <= bomb.range; i++) {
+                    let tx = cx + d.dx * i;
+                    let ty = cy + d.dy * i;
+
+                    if (tx < 0 || tx >= COLS || ty < 0 || ty >= ROWS) break;
+                    let cell = map[ty][tx];
+
+                    if (cell === 1) {
+                        // Indestructible wall blocks fire
+                        break;
+                    } else if (cell === 2) {
+                        // Destructible brick breaks, reveals powerup chance
+                        map[ty][tx] = 0;
+                        score += 100;
+                        if (Math.random() < 0.35) {
+                            // 35% chance powerup
+                            let pType = Math.random() < 0.5 ? 'range' : 'bomb';
+                            powerups.push({ x: tx, y: ty, type: pType });
+                        }
+                        fireTiles.push({x: tx, y: ty});
+                        break; // fire stops after destroying brick
+                    } else {
+                        fireTiles.push({x: tx, y: ty});
+                    }
+                }
+            });
+
+            // Trigger chain explosions on other bombs in fire range
+            fireTiles.forEach(ft => {
+                explosions.push({ x: ft.x, y: ft.y, life: 20 }); // Explosion lasts 20 frames
+
+                // Check other bombs
+                bombs.forEach((b, idx) => {
+                    if (b.x === ft.x && b.y === ft.y && b.timer > 0) {
+                        b.timer = 1; // Detonate immediately next frame
+                    }
+                });
+
+                // Check player hit
+                let pGridX = Math.floor((player.x + player.size/2) / TILE_SIZE);
+                let pGridY = Math.floor((player.y + player.size/2) / TILE_SIZE);
+                if (pGridX === ft.x && pGridY === ft.y) {
+                    playerHit();
+                }
+
+                // Check enemies hit
+                enemies.forEach((en, eIdx) => {
+                    let eGridX = Math.floor((en.x + TILE_SIZE/2) / TILE_SIZE);
+                    let eGridY = Math.floor((en.y + TILE_SIZE/2) / TILE_SIZE);
+                    if (eGridX === ft.x && eGridY === ft.y) {
+                        en.dead = true;
+                        score += 200;
+                    }
+                });
+            });
+        }
+
+        function playerHit() {
+            lives--;
+            if (lives <= 0) {
+                gameState = 2; // Lost
+                document.getElementById('msgTitle').innerText = 'GAME OVER';
+                document.getElementById('msgTitle').className = 'text-xl md:text-2xl mb-4 text-red-500';
+                document.getElementById('messageBox').classList.remove('hidden');
+            } else {
+                // Respawn at safe start
+                player.x = TILE_SIZE;
+                player.y = TILE_SIZE;
+            }
+        }
+
+        // Update Game State
+        function update() {
+            if (gameState !== 0) return;
+
+            // Player Keyboard Movement
+            let moveSpeed = player.speed;
+            let nx = player.x;
+            let ny = player.y;
+
+            if (keys['ArrowUp'] || keys['KeyW']) ny -= moveSpeed;
+            if (keys['ArrowDown'] || keys['KeyS']) ny += moveSpeed;
+            if (keys['ArrowLeft'] || keys['KeyA']) nx -= moveSpeed;
+            if (keys['ArrowRight'] || keys['KeyD']) nx += moveSpeed;
+
+            tryMove(nx, ny);
+
+            // Update Bombs
+            for (let i = bombs.length - 1; i >= 0; i--) {
+                bombs[i].timer--;
+                if (bombs[i].timer <= 0) {
+                    explodeBomb(bombs[i]);
+                    bombs.splice(i, 1);
+                }
+            }
+
+            // Update Explosions
+            for (let i = explosions.length - 1; i >= 0; i--) {
+                explosions[i].life--;
+                if (explosions[i].life <= 0) {
+                    explosions.splice(i, 1);
+                }
+            }
+
+            // Update Enemies (Simple smart-ish AI wandering)
+            enemies.forEach(en => {
+                en.x += en.dx * 1;
+                en.y += en.dy * 1;
+
+                // Check collision with walls or bricks, pick random new direction
+                let checkX = en.x + (en.dx > 0 ? TILE_SIZE : 0);
+                let checkY = en.y + (en.dy > 0 ? TILE_SIZE : 0);
+                let gX = Math.floor((en.x + TILE_SIZE/2) / TILE_SIZE);
+                let gY = Math.floor((en.y + TILE_SIZE/2) / TILE_SIZE);
+
+                if (isSolid(en.x, en.y, TILE_SIZE) || Math.random() < 0.02) {
+                    en.x -= en.dx * 1;
+                    en.y -= en.dy * 1;
+                    let dirs = [{dx:0, dy:-1}, {dx:0, dy:1}, {dx:-1, dy:0}, {dx:1, dy:0}];
+                    let chosen = dirs[Math.floor(Math.random() * dirs.length)];
+                    en.dx = chosen.dx;
+                    en.dy = chosen.dy;
+                }
+
+                // Check collision with player
+                let pCenterX = player.x + player.size/2;
+                let pCenterY = player.y + player.size/2;
+                let eCenterX = en.x + TILE_SIZE/2;
+                let eCenterY = en.y + TILE_SIZE/2;
+
+                if (Math.hypot(pCenterX - eCenterX, pCenterY - eCenterY) < 16) {
+                    playerHit();
+                }
+            });
+
+            // Remove dead enemies
+            enemies = enemies.filter(en => !en.dead);
+
+            // Check Win Condition (All enemies eliminated)
+            if (enemies.length === 0) {
+                gameState = 1;
+                document.getElementById('msgTitle').innerText = 'VICTORY!';
+                document.getElementById('msgTitle').className = 'text-xl md:text-2xl mb-4 text-green-400';
+                document.getElementById('messageBox').classList.remove('hidden');
+            }
+
+            // Check Powerup Pickup
+            let pGridX = Math.floor((player.x + player.size/2) / TILE_SIZE);
+            let pGridY = Math.floor((player.y + player.size/2) / TILE_SIZE);
+            for (let i = powerups.length - 1; i >= 0; i--) {
+                if (powerups[i].x === pGridX && powerups[i].y === pGridY) {
+                    if (powerups[i].type === 'range') player.power++;
+                    if (powerups[i].type === 'bomb') player.bombLimit++;
+                    score += 50;
+                    powerups.splice(i, 1);
+                }
+            }
+
+            // HUD updates
+            document.getElementById('score-val').innerText = score;
+            document.getElementById('lives-val').innerText = lives;
+        }
+
+        // Render Game Graphics
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Draw Map Tiles
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    let tile = map[r][c];
+                    let x = c * TILE_SIZE;
+                    let y = r * TILE_SIZE;
+
+                    if (tile === 0) {
+                        // Grass background
+                        ctx.fillStyle = '#2f855a';
+                        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                        // Subtle grass texture dots
+                        ctx.fillStyle = '#276749';
+                        ctx.fillRect(x + 8, y + 8, 4, 4);
+                        ctx.fillRect(x + 20, y + 20, 4, 4);
+                    } else if (tile === 1) {
+                        // Indestructible Outer/Pillar Wall
+                        ctx.fillStyle = '#4a5568';
+                        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                        ctx.fillStyle = '#2d3748';
+                        ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+                        ctx.fillStyle = '#718096';
+                        ctx.fillRect(x + 4, y + 4, TILE_SIZE - 8, 4);
+                    } else if (tile === 2) {
+                        // Destructible Brick Wall
+                        ctx.fillStyle = '#c53030';
+                        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                        ctx.fillStyle = '#9b2c2c';
+                        // Brick pattern lines
+                        ctx.fillRect(x, y + 14, TILE_SIZE, 2);
+                        ctx.fillRect(x + 14, y, 2, 14);
+                        ctx.fillRect(x + 6, y + 16, 2, 16);
+                    }
+                }
+            }
+
+            // 2. Draw Powerups
+            powerups.forEach(p => {
+                let px = p.x * TILE_SIZE;
+                let py = p.y * TILE_SIZE;
+                ctx.fillStyle = '#2f855a';
+                ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                ctx.fillStyle = p.type === 'range' ? '#3182ce' : '#d69e2e';
+                ctx.beginPath();
+                ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, 10, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '10px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(p.type === 'range' ? '🔥' : '💣', px + TILE_SIZE/2, py + TILE_SIZE/2);
+            });
+
+            // 3. Draw Bombs
+            bombs.forEach(b => {
+                let bx = b.x * TILE_SIZE + TILE_SIZE/2;
+                let by = b.y * TILE_SIZE + TILE_SIZE/2;
+                ctx.fillStyle = '#1a202c';
+                ctx.beginPath();
+                ctx.arc(bx, by + 2, 11, 0, Math.PI * 2);
+                ctx.fill();
+                // Bomb highlight
+                ctx.fillStyle = '#e2e8f0';
+                ctx.beginPath();
+                ctx.arc(bx - 3, by - 2, 3, 0, Math.PI * 2);
+                ctx.fill();
+                // Fusing spark blinking
+                if (Math.floor(Date.now() / 150) % 2 === 0) {
+                    ctx.fillStyle = '#ecc94b';
+                    ctx.beginPath();
+                    ctx.arc(bx + 6, by - 8, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+
+            // 4. Draw Explosions
+            explosions.forEach(e => {
+                let ex = e.x * TILE_SIZE;
+                let ey = e.y * TILE_SIZE;
+                ctx.fillStyle = '#ed8936';
+                ctx.fillRect(ex, ey, TILE_SIZE, TILE_SIZE);
+                ctx.fillStyle = '#f6ad55';
+                ctx.fillRect(ex + 4, ey + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+            });
+
+            // 5. Draw Enemies
+            enemies.forEach(en => {
+                ctx.fillStyle = en.color;
+                ctx.beginPath();
+                ctx.arc(en.x + TILE_SIZE/2, en.y + TILE_SIZE/2 - 2, 11, 0, Math.PI * 2);
+                ctx.fill();
+                // Eyes
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(en.x + 7, en.y + 8, 4, 6);
+                ctx.fillRect(en.x + 19, en.y + 8, 4, 6);
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(en.x + 9, en.y + 10, 2, 3);
+                ctx.fillRect(en.x + 21, en.y + 10, 2, 3);
+            });
+
+            // 6. Draw Player (Retro Bomberman Sprite)
+            let px = player.x;
+            let py = player.y;
+            // Head/Helmet
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            ctx.arc(px + player.size/2, py + 10, 9, 0, Math.PI * 2);
+            ctx.fill();
+            // Face visor
+            ctx.fillStyle = '#f6ad55';
+            ctx.fillRect(px + 6, py + 7, 12, 8);
+            // Suit body
+            ctx.fillStyle = player.accent;
+            ctx.fillRect(px + 4, py + 16, 16, 12);
+            // Cute antenna on top
+            ctx.fillStyle = '#ecc94b';
+            ctx.fillRect(px + 11, py - 2, 2, 4);
+            ctx.beginPath();
+            ctx.arc(px + 12, py - 3, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Timer countdown loop
+        setInterval(() => {
+            if (gameState === 0 && timeLeft > 0) {
+                timeLeft--;
+                let mins = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+                let secs = String(timeLeft % 60).padStart(2, '0');
+                document.getElementById('timer').innerText = `${mins}:${secs}`;
+                if (timeLeft <= 0) {
+                    gameState = 2;
+                    document.getElementById('msgTitle').innerText = "TIME'S UP!";
+                    document.getElementById('msgTitle').className = 'text-xl md:text-2xl mb-4 text-red-500';
+                    document.getElementById('messageBox').classList.remove('hidden');
+                }
+            }
+        }, 1000);
+
+        // Main Game Loop
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize and start
+        initMap();
+        initEnemies();
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
