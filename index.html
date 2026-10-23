@@ -1492,6 +1492,17 @@
     // Catálogo inicial con la estructura de proyectos y juegos adaptada a Yeiko Tintaya
     const DEFAULT_PROJECTS = [
       {
+        id: "proj-digdug",
+        title: "Dig Dug Retro",
+        category: "juegos",
+        categoryLabel: "Juegos & Simulación",
+        desc: "Juego clásico de Dig Dug donde excavamos la tierra, inflamos a Pookas y Fygars y dejamos caer rocas gigantes sobre los monstruos.",
+        icon: "⛏️",
+        tags: ["Dig Dug", "Retro", "Arcade", "HTML5 Canvas"],
+        url: "digdug/index.html",
+        demoPrompt: "Inicializando Dig Dug Retro... Excavando túneles, inflando a Pookas y Fygars y preparando trampas de rocas."
+      },
+      {
         id: "proj-bomberman",
         title: "Bomberman Retro",
         category: "juegos",
@@ -1615,6 +1626,12 @@
             if (!parsed.some(p => p.id === "proj-trivia" || (p.url && p.url.includes("trivia")))) {
               const triviaProj = DEFAULT_PROJECTS.find(p => p.id === "proj-trivia");
               if (triviaProj) parsed.unshift(triviaProj);
+              saveProjects(parsed);
+            }
+            // Asegurar que Dig Dug esté integrado automáticamente
+            if (!parsed.some(p => p.id === "proj-digdug" || (p.url && p.url.includes("digdug")))) {
+              const digdugProj = DEFAULT_PROJECTS.find(p => p.id === "proj-digdug");
+              if (digdugProj) parsed.unshift(digdugProj);
               saveProjects(parsed);
             }
             // Asegurar que Bomberman esté integrado automáticamente
@@ -1930,8 +1947,8 @@
             reply = "Yeiko Tintaya es estudiante de la Unidad Educativa Cambridge en Santa Cruz de la Sierra, apasionado por el desarrollo web, la creación de videojuegos y la integración de Inteligencia Artificial.";
           } else if (q.includes("trivia")) {
             reply = "¡La app Trivia Cambridge de Yeiko Tintaya ya está disponible! Puedes jugarla directamente en https://alumnochatbot.github.io/yeiko-tintaya/trivia o probar la demo interactiva en la sección de Proyectos.";
-          } else if (q.includes("proyecto") || q.includes("juego") || q.includes("minecraft")) {
-            reply = `Yeiko cuenta con ${projectsData.length} proyectos activos en su portafolio, incluyendo Trivia Cambridge, Minecraft AI World, Ajedrez 3D, Angry Bird, Blooket Cambridge y Serpiente Neuronal. Puedes probar las demos en la sección de Proyectos.`;
+          } else if (q.includes("proyecto") || q.includes("juego") || q.includes("minecraft") || q.includes("dig dug")) {
+            reply = `Yeiko cuenta con ${projectsData.length} proyectos activos en su portafolio, incluyendo Dig Dug Retro, Bomberman Retro, Trivia Cambridge, Minecraft AI World, Ajedrez 3D, Angry Bird y Serpiente Neuronal. Puedes probar las demos en la sección de Proyectos.`;
           } else if (q.includes("whatsapp") || q.includes("contacto") || q.includes("escribir")) {
             reply = "Puedes escribirle directamente a su WhatsApp haciendo clic en el botón flotante verde en la esquina inferior derecha o usando el formulario de contacto.";
           } else if (q.includes("cambridge") || q.includes("colegio")) {
