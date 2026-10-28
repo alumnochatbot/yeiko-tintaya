@@ -1492,6 +1492,17 @@
     // Catálogo inicial con la estructura de proyectos y juegos adaptada a Yeiko Tintaya
     const DEFAULT_PROJECTS = [
       {
+        id: "proj-mario",
+        title: "Super Mario Bros",
+        category: "juegos",
+        categoryLabel: "Juegos & Simulación",
+        desc: "Juego clásico de Super Mario Bros con físicas de salto, bloques de preguntas, super champiñones, Goombas y nivel 1-1 retro interactivo.",
+        icon: "🍄",
+        tags: ["Super Mario", "Retro NES", "HTML5 Canvas", "Plataformas"],
+        url: "mario bross/index.html",
+        demoPrompt: "Inicializando Super Mario Bros... Generando nivel 1-1, distribuyendo bloques [?] y spawn de Goombas."
+      },
+      {
         id: "proj-digdug",
         title: "Dig Dug Retro",
         category: "juegos",
@@ -1622,6 +1633,12 @@
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
+            // Asegurar que Super Mario Bros esté integrado automáticamente
+            if (!parsed.some(p => p.id === "proj-mario" || (p.url && p.url.includes("mario")))) {
+              const marioProj = DEFAULT_PROJECTS.find(p => p.id === "proj-mario");
+              if (marioProj) parsed.unshift(marioProj);
+              saveProjects(parsed);
+            }
             // Asegurar que la nueva Trivia esté integrada automáticamente al catálogo existente
             if (!parsed.some(p => p.id === "proj-trivia" || (p.url && p.url.includes("trivia")))) {
               const triviaProj = DEFAULT_PROJECTS.find(p => p.id === "proj-trivia");
@@ -1947,8 +1964,8 @@
             reply = "Yeiko Tintaya es estudiante de la Unidad Educativa Cambridge en Santa Cruz de la Sierra, apasionado por el desarrollo web, la creación de videojuegos y la integración de Inteligencia Artificial.";
           } else if (q.includes("trivia")) {
             reply = "¡La app Trivia Cambridge de Yeiko Tintaya ya está disponible! Puedes jugarla directamente en https://alumnochatbot.github.io/yeiko-tintaya/trivia o probar la demo interactiva en la sección de Proyectos.";
-          } else if (q.includes("proyecto") || q.includes("juego") || q.includes("minecraft") || q.includes("dig dug")) {
-            reply = `Yeiko cuenta con ${projectsData.length} proyectos activos en su portafolio, incluyendo Dig Dug Retro, Bomberman Retro, Trivia Cambridge, Minecraft AI World, Ajedrez 3D, Angry Bird y Serpiente Neuronal. Puedes probar las demos en la sección de Proyectos.`;
+          } else if (q.includes("proyecto") || q.includes("juego") || q.includes("minecraft") || q.includes("dig dug") || q.includes("mario")) {
+            reply = `Yeiko cuenta con ${projectsData.length} proyectos activos en su portafolio, incluyendo Super Mario Bros, Dig Dug Retro, Bomberman Retro, Trivia Cambridge, Minecraft AI World, Ajedrez 3D, Angry Bird y Serpiente Neuronal. Puedes probar las demos en la sección de Proyectos.`;
           } else if (q.includes("whatsapp") || q.includes("contacto") || q.includes("escribir")) {
             reply = "Puedes escribirle directamente a su WhatsApp haciendo clic en el botón flotante verde en la esquina inferior derecha o usando el formulario de contacto.";
           } else if (q.includes("cambridge") || q.includes("colegio")) {
