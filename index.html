@@ -1492,6 +1492,17 @@
     // Catálogo inicial con la estructura de proyectos y juegos adaptada a Yeiko Tintaya
     const DEFAULT_PROJECTS = [
       {
+        id: "proj-mario",
+        title: "Super Mario Bros Retro",
+        category: "juegos",
+        categoryLabel: "Juegos & Simulación",
+        desc: "Juego clásico de Super Mario Bros NES en edición web retro. Consigue el super champiñón en los bloques [?], aplasta Goombas y llega a la meta.",
+        icon: "🍄",
+        tags: ["Super Mario", "NES", "Retro", "HTML5 Canvas"],
+        url: "mario bross/index.html",
+        demoPrompt: "Inicializando Super Mario Bros... Cargando mundo 1-1, generando bloques [?], Goombas y champiñones."
+      },
+      {
         id: "proj-digdug",
         title: "Dig Dug Retro",
         category: "juegos",
@@ -1622,6 +1633,12 @@
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
+            // Asegurar que Super Mario Bros esté integrado automáticamente
+            if (!parsed.some(p => p.id === "proj-mario" || (p.url && p.url.includes("mario")))) {
+              const marioProj = DEFAULT_PROJECTS.find(p => p.id === "proj-mario");
+              if (marioProj) parsed.unshift(marioProj);
+              saveProjects(parsed);
+            }
             // Asegurar que la nueva Trivia esté integrada automáticamente al catálogo existente
             if (!parsed.some(p => p.id === "proj-trivia" || (p.url && p.url.includes("trivia")))) {
               const triviaProj = DEFAULT_PROJECTS.find(p => p.id === "proj-trivia");
