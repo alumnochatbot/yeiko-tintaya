@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mappy - Retro Arcade Classic</title>
+    <!-- Tailwind CSS for UI layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            font-family: 'Press Start 2P', cursive, monospace;
+            background-color: #0d0d11;
+            color: #ffffff;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow-x: hidden;
+        }
+
+        .arcade-font {
+            font-family: 'Press Start 2P', monospace;
+        }
+
+        .arcade-border {
+            border: 4px solid #4a4a68;
+            box-shadow: 0 0 15px rgba(255, 0, 128, 0.4), inset 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+
+        .mappy-logo-text {
+            background: linear-gradient(180deg, #ff0000 0%, #ffff00 33%, #00ff00 66%, #0066ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(4px 4px 0px #000);
+        }
+
+        canvas {
+            image-rendering: pixelated;
+            background-color: #000000;
+        }
+
+        .btn-retro {
+            background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+            border: 2px solid #60a5fa;
+            box-shadow: 0 4px 0 #1e40af;
+            transition: all 0.05s ease;
+        }
+        .btn-retro:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #1e40af;
+        }
+
+        .btn-action {
+            background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
+            border: 2px solid #fca5a5;
+            box-shadow: 0 4px 0 #991b1b;
+        }
+        .btn-action:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #991b1b;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-2 md:p-4 select-none">
+
+    <!-- Header Marquee -->
+    <header class="w-full max-w-4xl text-center my-2">
+        <h1 class="text-3xl sm:text-5xl font-black tracking-widest mappy-logo-text mb-1">MAPPY</h1>
+        <p class="text-xs sm:text-sm text-yellow-400 tracking-wider">RETRO ARCADE POLICE MOUSE</p>
+    </header>
+
+    <!-- Main Game Container -->
+    <main class="w-full max-w-4xl flex flex-col items-center">
+        
+        <!-- Score Bar Header -->
+        <div class="w-full bg-slate-900 border-2 border-slate-700 rounded-t-lg p-2 sm:p-3 flex justify-between items-center text-xs sm:text-sm text-yellow-300">
+            <div>1UP <span id="score-display" class="text-white block sm:inline sm:ml-2">000000</span></div>
+            <div>HIGH <span id="highscore-display" class="text-yellow-400 block sm:inline sm:ml-2">000000</span></div>
+            <div>ROUND <span id="round-display" class="text-cyan-400 block sm:inline sm:ml-2">1</span></div>
+            <div>LIVES <span id="lives-display" class="text-red-400 block sm:inline sm:ml-2">♥♥♥</span></div>
+        </div>
+
+        <!-- Canvas Frame -->
+        <div class="relative w-full aspect-[4/3] max-h-[600px] arcade-border bg-black rounded-b-lg overflow-hidden flex items-center justify-center">
+            <canvas id="gameCanvas" width="800" height="600" class="w-full h-full object-contain"></canvas>
+
+            <!-- Overlay Screen (Start / Game Over / Pause) -->
+            <div id="overlay" class="absolute inset-0 bg-black/85 flex flex-col items-center justify-center p-6 text-center z-10">
+                <h2 id="overlay-title" class="text-2xl sm:text-4xl text-yellow-400 mb-4 tracking-wider leading-relaxed">READY POLICE MOUSE!</h2>
+                <p id="overlay-msg" class="text-xs sm:text-sm text-gray-300 mb-6 max-w-md leading-6">
+                    Collect all stolen items! Jump on trampolines to evade cats. Open doors to stun cats or trigger Microwave Sonic Waves!
+                </p>
+                <button id="start-btn" class="btn-retro px-6 py-3 rounded-lg text-sm sm:text-base font-bold tracking-wider text-white hover:brightness-110">
+                    START GAME
+                </button>
+            </div>
+        </div>
+
+        <!-- Desktop Controls Instructions & Audio Toggle -->
+        <div class="w-full flex flex-wrap justify-between items-center text-[10px] sm:text-xs text-slate-400 mt-2 px-1 gap-2">
+            <div><span class="text-yellow-400">Controls:</span> ⬅️ ➡️ Move Left/Right | [SPACE] Open/Close Door</div>
+            <button id="sound-toggle" class="bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded border border-slate-600 text-cyan-300 transition">
+                🔊 Sound: ON
+            </button>
+        </div>
+    </main>
+
+    <!-- Touch Mobile Controls -->
+    <footer class="w-full max-w-md my-3 grid grid-cols-3 gap-3 px-2 sm:hidden">
+        <button id="btn-left" class="btn-retro py-4 rounded-xl text-xl text-center active:bg-blue-700 select-none">◀️ LEFT</button>
+        <button id="btn-door" class="btn-action py-4 rounded-xl text-sm font-bold text-center active:bg-red-700 select-none">🚪 DOOR</button>
+        <button id="btn-right" class="btn-retro py-4 rounded-xl text-xl text-center active:bg-blue-700 select-none">RIGHT ▶️</button>
+    </footer>
+
+    <script>
+        /**
+         * MAPPY RETRO ARCADE GAME - HTML5 Canvas & Web Audio API
+         * Full Single File Implementation
+         */
+
+        // --- AUDIO SYNTHESIZER ---
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playBounce() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(450, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+
+            playDoor() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.1);
+            }
+
+            playMicrowave() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(1200, this.ctx.currentTime + 0.4);
+                gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.4);
+            }
+
+            playItem() {
+                if (!this.enabled || !this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+                osc.frequency.setValueAtTime(1046.50, now + 0.24); // C6
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.35);
+            }
+
+            playCatKnock() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(150, this.ctx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.2);
+            }
+
+            playDeath() {
+                if (!this.enabled || !this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 0.6);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.6);
+            }
+
+            playClear() {
+                if (!this.enabled || !this.ctx) return;
+                const now = this.ctx.currentTime;
+                const notes = [440, 554.37, 659.25, 880];
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.1);
+                    gain.gain.setValueAtTime(0.2, now + i * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.2);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.1);
+                    osc.stop(now + i * 0.1 + 0.2);
+                });
+            }
+        }
+
+        const soundFX = new SoundFX();
+
+        // --- GAME ENGINE & ENGINE STATES ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // UI elements
+        const scoreDisplay = document.getElementById('score-display');
+        const highscoreDisplay = document.getElementById('highscore-display');
+        const roundDisplay = document.getElementById('round-display');
+        const livesDisplay = document.getElementById('lives-display');
+        const overlay = document.getElementById('overlay');
+        const overlayTitle = document.getElementById('overlay-title');
+        const overlayMsg = document.getElementById('overlay-msg');
+        const startBtn = document.getElementById('start-btn');
+        const soundToggle = document.getElementById('sound-toggle');
+
+        // Dimensions & House Layout Settings
+        const NUM_FLOORS = 6;
+        const FLOOR_HEIGHT = 80;
+        const TOP_MARGIN = 70;
+        const FLOOR_Y = [];
+        for (let i = 0; i < NUM_FLOORS; i++) {
+            FLOOR_Y.push(TOP_MARGIN + i * FLOOR_HEIGHT);
+        }
+
+        // Trampoline columns X coordinates
+        const TRAMPOLINE_X = [70, 400, 730];
+        const HOUSE_LEFT = 40;
+        const HOUSE_RIGHT = 760;
+
+        // Game State Variables
+        let score = 0;
+        let highscore = parseInt(localStorage.getItem('mappy_highscore') || '0', 10);
+        let lives = 3;
+        let round = 1;
+        let gameState = 'START'; // START, PLAYING, GAMEOVER, CLEAR
+        let keys = { left: false, right: false, action: false };
+
+        highscoreDisplay.textContent = String(highscore).padStart(6, '0');
+
+        // --- GAME OBJECT CLASSES ---
+
+        class Trampoline {
+            constructor(x) {
+                this.x = x;
+                this.bounces = 0; // 0: Green, 1: Blue, 2: Yellow, 3: Red (breaks on 4th jump)
+                this.isBroken = false;
+                this.respawnTimer = 0;
+            }
+
+            getColor() {
+                if (this.bounces === 0) return '#00ff00'; // Green
+                if (this.bounces === 1) return '#00ffff'; // Blue
+                if (this.bounces === 2) return '#ffff00'; // Yellow
+                return '#ff0000'; // Red
+            }
+
+            reset() {
+                this.bounces = 0;
+                this.isBroken = false;
+                this.respawnTimer = 0;
+            }
+
+            update() {
+                if (this.isBroken) {
+                    this.respawnTimer++;
+                    if (this.respawnTimer > 180) { // 3 seconds to repair
+                        this.reset();
+                    }
+                }
+            }
+
+            draw(ctx) {
+                if (this.isBroken) return;
+
+                const topY = FLOOR_Y[0];
+                const bottomY = FLOOR_Y[NUM_FLOORS - 1] + 25;
+                const color = this.getColor();
+
+                // Draw vertical trampoline rope line
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 4;
+                ctx.setLineDash([6, 4]);
+                ctx.beginPath();
+                ctx.moveTo(this.x, topY);
+                ctx.lineTo(this.x, bottomY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Draw top and bottom spring pulleys
+                ctx.fillStyle = '#ffaa00';
+                ctx.fillRect(this.x - 6, topY - 8, 12, 8);
+                ctx.fillRect(this.x - 6, bottomY, 12, 8);
+            }
+        }
+
+        class Door {
+            constructor(floor, x, isMicrowave = false) {
+                this.floor = floor; // 0 to 5
+                this.x = x;
+                this.y = FLOOR_Y[floor] - 45;
+                this.width = 10;
+                this.height = 45;
+                this.isOpen = false;
+                this.facing = Math.random() < 0.5 ? 'left' : 'right'; // Which side handle is on
+                this.isMicrowave = isMicrowave;
+                this.openTimer = 0;
+            }
+
+            draw(ctx) {
+                const color = this.isMicrowave ? '#ff00ff' : '#d97706';
+                const handleColor = '#fbbf24';
+
+                if (!this.isOpen) {
+                    // Closed Door
+                    ctx.fillStyle = color;
+                    ctx.fillRect(this.x - 4, this.y, 8, this.height);
+                    
+                    // Door frame/details
+                    ctx.fillStyle = this.isMicrowave ? '#ffffff' : '#92400e';
+                    ctx.fillRect(this.x - (this.facing === 'left' ? 3 : -1), this.y + 20, 4, 4); // Handle
+
+                    if (this.isMicrowave) {
+                        // Microwave door glow animation effect
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${0.4 + Math.sin(Date.now() / 150) * 0.4})`;
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(this.x - 5, this.y - 1, 10, this.height + 2);
+                    }
+                } else {
+                    // Open Door arc / opening swing
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    const dir = this.facing === 'left' ? -1 : 1;
+                    ctx.fillRect(this.x, this.y, dir * 25, this.height);
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(this.x, this.y, dir * 25, this.height);
+                }
+            }
+        }
+
+        class MicrowaveWave {
+            constructor(x, y, direction) {
+                this.x = x;
+                this.y = y;
+                this.direction = direction; // -1 for left, 1 for right
+                this.speed = 10;
+                this.active = true;
+                this.width = 30;
+                this.height = 40;
+            }
+
+            update() {
+                this.x += this.direction * this.speed;
+                if (this.x < HOUSE_LEFT || this.x > HOUSE_RIGHT) {
+                    this.active = false;
+                }
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y + 20);
+                
+                // Draw multi-colored sonic wave concentric arcs
+                const colors = ['#ff0000', '#ffff00', '#00ff00', '#00ffff', '#ff00ff'];
+                for (let i = 0; i < 4; i++) {
+                    ctx.strokeStyle = colors[(i + Math.floor(Date.now() / 50)) % colors.length];
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    const arcX = -this.direction * (i * 12);
+                    ctx.arc(arcX, 0, 15 + i * 4, -Math.PI / 2, Math.PI / 2, this.direction < 0);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
+
+        class Item {
+            constructor(type, floor, x) {
+                this.type = type; // 'painting' (100), 'tv' (200), 'radio' (300), 'monalisa' (400), 'safe' (500)
+                this.floor = floor;
+                this.x = x;
+                this.y = FLOOR_Y[floor] - 35;
+                this.width = 30;
+                this.height = 30;
+                this.collected = false;
+
+                const scoreMap = {
+                    painting: 100,
+                    tv: 200,
+                    radio: 300,
+                    monalisa: 400,
+                    safe: 500
+                };
+                this.points = scoreMap[type] || 100;
+            }
+
+            draw(ctx) {
+                if (this.collected) return;
+
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                if (this.type === 'painting') {
+                    // Frame
+                    ctx.fillStyle = '#b45309';
+                    ctx.fillRect(0, 0, 26, 30);
+                    ctx.fillStyle = '#059669';
+                    ctx.fillRect(3, 3, 20, 24);
+                    // Art portrait
+                    ctx.fillStyle = '#fef08a';
+                    ctx.beginPath();
+                    ctx.arc(13, 12, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (this.type === 'tv') {
+                    // Retro Radio/TV
+                    ctx.fillStyle = '#475569';
+                    ctx.fillRect(0, 4, 28, 22);
+                    ctx.fillStyle = '#0284c7';
+                    ctx.fillRect(3, 7, 16, 16);
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.fillRect(21, 9, 4, 4);
+                    ctx.fillRect(21, 16, 4, 4);
+                } else if (this.type === 'radio') {
+                    // Boombox / Radio
+                    ctx.fillStyle = '#ef4444';
+                    ctx.fillRect(0, 6, 30, 20);
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(7, 16, 5, 0, Math.PI * 2);
+                    ctx.arc(23, 16, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (this.type === 'monalisa') {
+                    // Mona Lisa Artwork
+                    ctx.fillStyle = '#d97706';
+                    ctx.fillRect(0, 0, 28, 32);
+                    ctx.fillStyle = '#1e3a8a';
+                    ctx.fillRect(3, 3, 22, 26);
+                    ctx.fillStyle = '#fca5a5';
+                    ctx.beginPath();
+                    ctx.arc(14, 13, 7, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (this.type === 'safe') {
+                    // Gold Safe
+                    ctx.fillStyle = '#eab308';
+                    ctx.fillRect(0, 2, 28, 26);
+                    ctx.fillStyle = '#ca8a04';
+                    ctx.fillRect(3, 5, 22, 20);
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(14, 15, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        class Player {
+            constructor() {
+                this.resetPosition();
+            }
+
+            resetPosition() {
+                this.floor = 5; // Start on bottom floor
+                this.x = 220;
+                this.y = FLOOR_Y[this.floor] - 30;
+                this.vx = 0;
+                this.vy = 0;
+                this.width = 24;
+                this.height = 30;
+                this.direction = 1; // 1: right, -1: left
+                this.inTrampoline = false;
+                this.trampolineIndex = -1;
+                this.trampolineDirection = 1; // 1: going down, -1: going up
+                this.bounceY = 0;
+                this.isDead = false;
+                this.deathTimer = 0;
+                this.invulnerableTimer = 0;
+            }
+
+            update(trampolines, doors, microwaveWaves, items) {
+                if (this.isDead) return;
+
+                if (this.invulnerableTimer > 0) this.invulnerableTimer--;
+
+                // Movement Logic on Trampoline vs Floor
+                if (this.inTrampoline) {
+                    const tramp = trampolines[this.trampolineIndex];
+
+                    // Vertical bounce movement physics
+                    const minY = FLOOR_Y[0] - 10;
+                    const maxY = FLOOR_Y[NUM_FLOORS - 1] + 15;
+
+                    this.y += this.trampolineDirection * 5.5;
+
+                    // Trampoline wall boundary limits
+                    if (this.y >= maxY) {
+                        this.y = maxY;
+                        this.trampolineDirection = -1; // Bounce upwards
+                        soundFX.playBounce();
+                    } else if (this.y <= minY) {
+                        this.y = minY;
+                        this.trampolineDirection = 1; // Start falling down
+                    }
+
+                    // Steer left or right to land on a floor height
+                    const nearFloorIndex = FLOOR_Y.findIndex(fy => Math.abs((fy - 30) - this.y) < 12);
+
+                    if (keys.left && tramp.x > this.x) {
+                        this.direction = -1;
+                        if (nearFloorIndex !== -1) {
+                            // Land on left floor
+                            this.inTrampoline = false;
+                            this.floor = nearFloorIndex;
+                            this.x = tramp.x - 20;
+                            this.y = FLOOR_Y[this.floor] - 30;
+                            tramp.bounces = 0; // Reset trampoline bounce durability upon landing on solid floor
+                        }
+                    } else if (keys.right && tramp.x < this.x + this.width) {
+                        this.direction = 1;
+                        if (nearFloorIndex !== -1) {
+                            // Land on right floor
+                            this.inTrampoline = false;
+                            this.floor = nearFloorIndex;
+                            this.x = tramp.x + 20;
+                            this.y = FLOOR_Y[this.floor] - 30;
+                            tramp.bounces = 0; // Reset trampoline durability
+                        }
+                    }
+
+                } else {
+                    // Solid Floor Movement
+                    const speed = 3.5;
+                    this.vx = 0;
+
+                    if (keys.left) {
+                        this.vx = -speed;
+                        this.direction = -1;
+                    } else if (keys.right) {
+                        this.vx = speed;
+                        this.direction = 1;
+                    }
+
+                    this.x += this.vx;
+
+                    // Check if player walked off floor edge into a Trampoline Column
+                    trampolines.forEach((tramp, idx) => {
+                        if (!tramp.isBroken && Math.abs((this.x + this.width / 2) - tramp.x) < 15) {
+                            this.inTrampoline = true;
+                            this.trampolineIndex = idx;
+                            this.trampolineDirection = 1; // start falling
+                            tramp.bounces++;
+                            soundFX.playBounce();
+
+                            // Trampoline breaks if bounced 4 times without landing
+                            if (tramp.bounces >= 4) {
+                                tramp.isBroken = true;
+                                this.inTrampoline = false; // Player plunges down!
+                                this.triggerDeath();
+                            }
+                        }
+                    });
+
+                    // House outer boundaries
+                    if (this.x < HOUSE_LEFT) this.x = HOUSE_LEFT;
+                    if (this.x + this.width > HOUSE_RIGHT) this.x = HOUSE_RIGHT - this.width;
+
+                    // Keep Y locked to floor height
+                    this.y = FLOOR_Y[this.floor] - 30;
+                }
+
+                // Handle Action Key / Door Opening
+                if (keys.action && !this.inTrampoline) {
+                    keys.action = false; // Reset single action press
+                    this.tryOperateDoor(doors, microwaveWaves);
+                }
+
+                // Collect Items
+                items.forEach(item => {
+                    if (!item.collected && item.floor === this.floor && Math.abs((this.x + this.width / 2) - (item.x + 15)) < 25) {
+                        item.collected = true;
+                        score += item.points;
+                        soundFX.playItem();
+
+                        // Floating score pop animation effect
+                        floatingScores.push({
+                            text: `+${item.points}`,
+                            x: item.x,
+                            y: item.y,
+                            life: 40
+                        });
+                    }
+                });
+            }
+
+            tryOperateDoor(doors, microwaveWaves) {
+                doors.forEach(door => {
+                    if (door.floor === this.floor && Math.abs(this.x - door.x) < 35) {
+                        door.isOpen = !door.isOpen;
+                        soundFX.playDoor();
+
+                        if (door.isOpen && door.isMicrowave) {
+                            soundFX.playMicrowave();
+                            // Spawn horizontal microwave sonic wave across the floor!
+                            const waveDir = this.direction;
+                            microwaveWaves.push(new MicrowaveWave(door.x, FLOOR_Y[door.floor] - 40, waveDir));
+                        }
+                    }
+                });
+            }
+
+            triggerDeath() {
+                if (this.invulnerableTimer > 0 || this.isDead) return;
+                this.isDead = true;
+                soundFX.playDeath();
+                lives--;
+                livesDisplay.textContent = '♥'.repeat(Math.max(0, lives));
+
+                setTimeout(() => {
+                    if (lives <= 0) {
+                        endGame();
+                    } else {
+                        this.resetPosition();
+                        this.invulnerableTimer = 90; // Flash 1.5s invulnerable
+                    }
+                }, 1200);
+            }
+
+            draw(ctx) {
+                if (this.isDead) {
+                    // Death spin frame
+                    ctx.save();
+                    ctx.translate(this.x + 12, this.y + 15);
+                    ctx.rotate(Date.now() / 100);
+                    ctx.fillStyle = '#3b82f6';
+                    ctx.fillRect(-12, -15, 24, 30);
+                    ctx.restore();
+                    return;
+                }
+
+                if (this.invulnerableTimer % 6 > 3) return; // Invulnerability blink effect
+
+                ctx.save();
+                ctx.translate(this.x + 12, this.y + 15);
+                if (this.direction === -1) ctx.scale(-1, 1);
+
+                // Body (Blue Mouse Police Uniform)
+                ctx.fillStyle = '#2563eb';
+                ctx.fillRect(-10, -5, 20, 20);
+
+                // Head (Grey Mouse)
+                ctx.fillStyle = '#9ca3af';
+                ctx.beginPath();
+                ctx.arc(0, -10, 10, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Pink Ears
+                ctx.fillStyle = '#f472b6';
+                ctx.beginPath();
+                ctx.arc(-8, -18, 5, 0, Math.PI * 2);
+                ctx.arc(4, -18, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Police Hat
+                ctx.fillStyle = '#1e3a8a';
+                ctx.fillRect(-8, -22, 16, 6);
+                ctx.fillStyle = '#facc15'; // Badge
+                ctx.fillRect(-2, -20, 4, 4);
+
+                // Eyes & Snout
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(4, -12, 3, 3);
+                ctx.fillStyle = '#f472b6';
+                ctx.fillRect(8, -9, 3, 3);
+
+                ctx.restore();
+            }
+        }
+
+        class Cat {
+            constructor(type = 'nyamco', floor = 0, x = 400) {
+                this.type = type; // 'nyamco' (pink cat) or 'goro' (boss red cat)
+                this.floor = floor;
+                this.x = x;
+                this.y = FLOOR_Y[floor] - 30;
+                this.width = 24;
+                this.height = 28;
+                this.direction = Math.random() < 0.5 ? 1 : -1;
+                this.speed = type === 'goro' ? 2.6 : 2.0;
+                this.inTrampoline = false;
+                this.trampolineIndex = -1;
+                this.trampolineDirection = 1;
+                this.isStunned = false;
+                this.stunTimer = 0;
+            }
+
+            update(player, trampolines, doors, microwaveWaves) {
+                if (this.isStunned) {
+                    this.stunTimer--;
+                    if (this.stunTimer <= 0) this.isStunned = false;
+                    return;
+                }
+
+                // Check collision with Microwave Shockwaves
+                microwaveWaves.forEach(wave => {
+                    if (wave.active && Math.abs((this.y + 15) - wave.y) < 30 && Math.abs((this.x + 12) - wave.x) < 35) {
+                        this.isStunned = true;
+                        this.stunTimer = 180; // 3 seconds stunned
+                        score += 400;
+                        soundFX.playCatKnock();
+                        floatingScores.push({ text: '+400', x: this.x, y: this.y, life: 40 });
+                    }
+                });
+
+                // Check collision with Doors swinging
+                doors.forEach(door => {
+                    if (door.isOpen && door.floor === this.floor && Math.abs(this.x - door.x) < 30) {
+                        this.isStunned = true;
+                        this.stunTimer = 120;
+                        soundFX.playCatKnock();
+                    }
+                });
+
+                // AI Pathing / Chasing Mappy
+                if (this.inTrampoline) {
+                    const tramp = trampolines[this.trampolineIndex];
+                    const minY = FLOOR_Y[0] - 10;
+                    const maxY = FLOOR_Y[NUM_FLOORS - 1] + 15;
+
+                    this.y += this.trampolineDirection * 4.5;
+
+                    if (this.y >= maxY) {
+                        this.y = maxY;
+                        this.trampolineDirection = -1;
+                    } else if (this.y <= minY) {
+                        this.y = minY;
+                        this.trampolineDirection = 1;
+                    }
+
+                    // Exit trampoline towards player's floor
+                    const nearFloorIndex = FLOOR_Y.findIndex(fy => Math.abs((fy - 30) - this.y) < 15);
+                    if (nearFloorIndex !== -1 && (nearFloorIndex === player.floor || Math.random() < 0.05)) {
+                        this.inTrampoline = false;
+                        this.floor = nearFloorIndex;
+                        this.direction = player.x > this.x ? 1 : -1;
+                    }
+
+                } else {
+                    // Move along floor
+                    this.x += this.direction * this.speed;
+
+                    // Randomly change floor or bounce at trampoline gaps
+                    trampolines.forEach((tramp, idx) => {
+                        if (!tramp.isBroken && Math.abs((this.x + 12) - tramp.x) < 10) {
+                            if (Math.random() < 0.6 || player.floor !== this.floor) {
+                                this.inTrampoline = true;
+                                this.trampolineIndex = idx;
+                                this.trampolineDirection = Math.random() < 0.5 ? 1 : -1;
+                            }
+                        }
+                    });
+
+                    // Turn around at house walls
+                    if (this.x < HOUSE_LEFT) {
+                        this.x = HOUSE_LEFT;
+                        this.direction = 1;
+                    } else if (this.x + this.width > HOUSE_RIGHT) {
+                        this.x = HOUSE_RIGHT - this.width;
+                        this.direction = -1;
+                    }
+
+                    this.y = FLOOR_Y[this.floor] - 30;
+                }
+
+                // Check player collision
+                if (!player.isDead && !this.isStunned) {
+                    // Collision check
+                    const dx = (this.x + 12) - (player.x + 12);
+                    const dy = (this.y + 15) - (player.y + 15);
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    // Note: Players on Trampolines are SAFE from cats unless they cross at the exact peak/landing
+                    if (distance < 22) {
+                        if (!player.inTrampoline || !this.inTrampoline) {
+                            player.triggerDeath();
+                        }
+                    }
+                }
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x + 12, this.y + 14);
+                if (this.direction === -1) ctx.scale(-1, 1);
+
+                if (this.isStunned) {
+                    ctx.rotate(Math.PI / 2);
+                }
+
+                const mainColor = this.type === 'goro' ? '#ef4444' : '#ec4899';
+
+                // Cat Body
+                ctx.fillStyle = mainColor;
+                ctx.fillRect(-10, -6, 20, 18);
+
+                // Cat Head
+                ctx.beginPath();
+                ctx.arc(0, -10, 9, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Cat Ears
+                ctx.beginPath();
+                ctx.moveTo(-8, -14); ctx.lineTo(-4, -22); ctx.lineTo(-1, -14);
+                ctx.moveTo(1, -14); ctx.lineTo(4, -22); ctx.lineTo(8, -14);
+                ctx.fill();
+
+                // Face / Eyes
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(2, -12, 4, 4);
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(4, -11, 2, 2);
+
+                // Tail
+                ctx.strokeStyle = mainColor;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(-10, 6);
+                ctx.quadraticCurveTo(-18, 0, -14, -8);
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }
+
+        // --- GAME LEVEL BUILDER & GLOBAL LISTS ---
+        let player = new Player();
+        let trampolines = [];
+        let doors = [];
+        let items = [];
+        let cats = [];
+        let microwaveWaves = [];
+        let floatingScores = [];
+
+        function initLevel(roundNum) {
+            player.resetPosition();
+
+            // Trampolines setup
+            trampolines = TRAMPOLINE_X.map(x => new Trampoline(x));
+
+            // Generate Doors
+            doors = [];
+            for (let f = 0; f < NUM_FLOORS; f++) {
+                doors.push(new Door(f, 230, f % 2 === 1));
+                doors.push(new Door(f, 570, f % 2 === 0));
+            }
+
+            // Generate Stolen Item Pairs
+            items = [];
+            const itemTypes = ['painting', 'tv', 'radio', 'monalisa', 'safe'];
+            let itemIdx = 0;
+            for (let f = 0; f < NUM_FLOORS - 1; f++) {
+                const type = itemTypes[itemIdx % itemTypes.length];
+                items.push(new Item(type, f, 140));
+                items.push(new Item(type, f, 620));
+                itemIdx++;
+            }
+
+            // Generate Enemy Cats (More cats in higher rounds)
+            cats = [];
+            const numNyamcos = Math.min(3 + roundNum, 7);
+            for (let i = 0; i < numNyamcos; i++) {
+                const randomFloor = Math.floor(Math.random() * 4);
+                const randomX = 150 + Math.random() * 500;
+                cats.push(new Cat('nyamco', randomFloor, randomX));
+            }
+            // Add Goro (Boss Cat)
+            cats.push(new Cat('goro', 0, 400));
+
+            microwaveWaves = [];
+            floatingScores = [];
+            roundDisplay.textContent = roundNum;
+        }
+
+        // --- DRAWING THE HOUSE ENVIRONMENT ---
+        function drawHouse() {
+            // Draw Mansion Background
+            ctx.fillStyle = '#111827';
+            ctx.fillRect(HOUSE_LEFT, TOP_MARGIN - 20, HOUSE_RIGHT - HOUSE_LEFT, (NUM_FLOORS - 1) * FLOOR_HEIGHT + 65);
+
+            // Draw Floors
+            for (let i = 0; i < NUM_FLOORS; i++) {
+                const y = FLOOR_Y[i];
+
+                // Floor Beam (Gold/Wooden lattice)
+                ctx.fillStyle = '#f59e0b';
+                ctx.fillRect(HOUSE_LEFT, y, HOUSE_RIGHT - HOUSE_LEFT, 12);
+                ctx.fillStyle = '#b45309';
+                ctx.fillRect(HOUSE_LEFT, y + 9, HOUSE_RIGHT - HOUSE_LEFT, 3);
+
+                // Cutouts for Trampoline gaps
+                TRAMPOLINE_X.forEach(tx => {
+                    ctx.clearRect(tx - 25, y - 2, 50, 16);
+                    ctx.fillStyle = '#000000';
+                    ctx.fillRect(tx - 25, y - 2, 50, 16);
+                });
+            }
+
+            // Background Pillars & Wall Decorations
+            ctx.fillStyle = '#374151';
+            ctx.fillRect(HOUSE_LEFT - 10, TOP_MARGIN - 30, 12, (NUM_FLOORS) * FLOOR_HEIGHT);
+            ctx.fillRect(HOUSE_RIGHT - 2, TOP_MARGIN - 30, 12, (NUM_FLOORS) * FLOOR_HEIGHT);
+        }
+
+        // --- FLOATING SCORES ---
+        function updateAndDrawScores() {
+            for (let i = floatingScores.length - 1; i >= 0; i--) {
+                const fs = floatingScores[i];
+                fs.y -= 0.8;
+                fs.life--;
+                ctx.fillStyle = '#ffff00';
+                ctx.font = '12px "Press Start 2P"';
+                ctx.fillText(fs.text, fs.x, fs.y);
+                if (fs.life <= 0) floatingScores.splice(i, 1);
+            }
+        }
+
+        // --- MAIN GAME LOOP ---
+        function gameLoop() {
+            // Clear Screen
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (gameState === 'PLAYING') {
+                // 1. Update Game Objects
+                trampolines.forEach(t => t.update());
+                player.update(trampolines, doors, microwaveWaves, items);
+                cats.forEach(c => c.update(player, trampolines, doors, microwaveWaves));
+
+                for (let i = microwaveWaves.length - 1; i >= 0; i--) {
+                    microwaveWaves[i].update();
+                    if (!microwaveWaves[i].active) microwaveWaves.splice(i, 1);
+                }
+
+                // Check Level Victory (All items collected)
+                if (items.every(item => item.collected)) {
+                    gameState = 'CLEAR';
+                    soundFX.playClear();
+                    setTimeout(() => {
+                        round++;
+                        initLevel(round);
+                        gameState = 'PLAYING';
+                    }, 2000);
+                }
+
+                // High score tracking
+                if (score > highscore) {
+                    highscore = score;
+                    localStorage.setItem('mappy_highscore', highscore);
+                    highscoreDisplay.textContent = String(highscore).padStart(6, '0');
+                }
+                scoreDisplay.textContent = String(score).padStart(6, '0');
+            }
+
+            // 2. Render Scene
+            drawHouse();
+            trampolines.forEach(t => t.draw(ctx));
+            doors.forEach(d => d.draw(ctx));
+            items.forEach(i => i.draw(ctx));
+            microwaveWaves.forEach(mw => mw.draw(ctx));
+            cats.forEach(c => c.draw(ctx));
+            player.draw(ctx);
+            updateAndDrawScores();
+
+            // Clear Overlay text if level round clear
+            if (gameState === 'CLEAR') {
+                ctx.fillStyle = '#00ff00';
+                ctx.font = '24px "Press Start 2P"';
+                ctx.textAlign = 'center';
+                ctx.fillText(`ROUND ${round} CLEAR!`, canvas.width / 2, canvas.height / 2);
+                ctx.textAlign = 'left';
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- GAME CONTROLS & EVENT LISTENERS ---
+
+        function startGame() {
+            soundFX.init();
+            score = 0;
+            lives = 3;
+            round = 1;
+            livesDisplay.textContent = '♥♥♥';
+            scoreDisplay.textContent = '000000';
+            initLevel(round);
+            gameState = 'PLAYING';
+            overlay.classList.add('hidden');
+        }
+
+        function endGame() {
+            gameState = 'GAMEOVER';
+            overlayTitle.textContent = 'GAME OVER';
+            overlayMsg.textContent = `FINAL SCORE: ${score}`;
+            startBtn.textContent = 'PLAY AGAIN';
+            overlay.classList.remove('hidden');
+        }
+
+        // Keyboard Event Handlers
+        window.addEventListener('keydown', e => {
+            soundFX.init();
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+            if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'ArrowUp' || e.key === 'e' || e.key === 'E') {
+                keys.action = true;
+            }
+        });
+
+        window.addEventListener('keyup', e => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+            if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'ArrowUp' || e.key === 'e' || e.key === 'E') {
+                keys.action = false;
+            }
+        });
+
+        // Touch Control Buttons for Mobile / Screen Taps
+        const bindTouch = (id, keyName) => {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            const start = (e) => { e.preventDefault(); soundFX.init(); keys[keyName] = true; };
+            const end = (e) => { e.preventDefault(); keys[keyName] = false; };
+            btn.addEventListener('touchstart', start, { passive: false });
+            btn.addEventListener('touchend', end, { passive: false });
+            btn.addEventListener('mousedown', start);
+            btn.addEventListener('mouseup', end);
+        };
+
+        bindTouch('btn-left', 'left');
+        bindTouch('btn-right', 'right');
+        bindTouch('btn-door', 'action');
+
+        startBtn.addEventListener('click', () => {
+            startGame();
+        });
+
+        soundToggle.addEventListener('click', () => {
+            soundFX.enabled = !soundFX.enabled;
+            soundToggle.textContent = soundFX.enabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
+        });
+
+        // Initialize Loop on Window Load
+        window.onload = () => {
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>
