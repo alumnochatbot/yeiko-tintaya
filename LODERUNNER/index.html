@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lode Runner Retro Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            font-family: 'Courier New', Courier, monospace;
+            touch-action: none;
+        }
+        canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-white flex flex-col items-center justify-between p-4">
+    <!-- Header / HUD -->
+    <header class="w-full max-w-4xl flex flex-col sm:flex-row items-center justify-between bg-slate-800/80 backdrop-blur border border-slate-700 rounded-xl p-4 shadow-xl mb-4">
+        <div class="flex items-center space-x-3 mb-2 sm:mb-0">
+            <div class="bg-indigo-600 text-yellow-300 px-3 py-1 rounded-lg font-bold text-lg tracking-wider border border-indigo-400">
+                LODE RUNNER
+            </div>
+            <span class="text-xs text-slate-400">9 Levels Edition</span>
+        </div>
+        <div class="flex items-center space-x-6 text-sm md:text-base font-semibold">
+            <div class="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700">
+                SCORE: <span id="score-val" class="text-yellow-400">0</span>
+            </div>
+            <div class="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700">
+                LIVES: <span id="lives-val" class="text-red-400">3</span>
+            </div>
+            <div class="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700">
+                LEVEL: <span id="level-val" class="text-green-400">1</span> / 9
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Container -->
+    <main class="relative w-full max-w-4xl flex flex-col items-center justify-center bg-slate-950 border-4 border-slate-700 rounded-2xl overflow-hidden shadow-2xl">
+        <!-- Overlay for Start / Game Over / Victory -->
+        <div id="modal-overlay" class="absolute inset-0 bg-black/85 backdrop-blur-sm z-20 flex flex-col items-center justify-center p-6 text-center">
+            <h1 id="modal-title" class="text-4xl md:text-6xl font-extrabold text-yellow-400 mb-4 tracking-widest drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)]">LODE RUNNER</h1>
+            <p id="modal-desc" class="text-slate-300 text-sm md:text-base max-w-md mb-8 leading-relaxed">
+                Complete all 9 levels! Collect gold piles, climb ladders smoothly, avoid pursuing guards, and dig holes to trap them.
+            </p>
+            <button id="start-btn" class="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold px-8 py-4 rounded-xl shadow-lg border-2 border-indigo-400 text-lg transition transform hover:scale-105 active:scale-95 cursor-pointer">
+                START GAME
+            </button>
+        </div>
+
+        <!-- Canvas -->
+        <canvas id="gameCanvas" class="w-full h-auto aspect-[28/16] bg-black block"></canvas>
+    </main>
+
+    <!-- Controls Footer (Mobile & Desktop Touch) -->
+    <footer class="w-full max-w-4xl mt-4 flex flex-col md:flex-row items-center justify-between bg-slate-800/80 backdrop-blur border border-slate-700 rounded-xl p-4 gap-4">
+        <!-- D-Pad -->
+        <div class="grid grid-cols-3 gap-2 w-40 h-40">
+            <div></div>
+            <button id="btn-up" class="bg-slate-700 hover:bg-slate-600 active:bg-indigo-600 rounded-lg flex items-center justify-center text-xl shadow font-bold border border-slate-600">▲</button>
+            <div></div>
+            <button id="btn-left" class="bg-slate-700 hover:bg-slate-600 active:bg-indigo-600 rounded-lg flex items-center justify-center text-xl shadow font-bold border border-slate-600">◀</button>
+            <div class="bg-slate-900 rounded-lg flex items-center justify-center text-xs text-slate-500">MOVE</div>
+            <button id="btn-right" class="bg-slate-700 hover:bg-slate-600 active:bg-indigo-600 rounded-lg flex items-center justify-center text-xl shadow font-bold border border-slate-600">▶</button>
+            <div></div>
+            <button id="btn-down" class="bg-slate-700 hover:bg-slate-600 active:bg-indigo-600 rounded-lg flex items-center justify-center text-xl shadow font-bold border border-slate-600">▼</button>
+            <div></div>
+        </div>
+
+        <!-- Instructions & Action Buttons -->
+        <div class="flex flex-col items-center md:items-end gap-3 w-full md:w-auto">
+            <div class="flex gap-4 w-full justify-center">
+                <button id="btn-dig-left" class="flex-1 md:flex-none bg-amber-700 hover:bg-amber-600 active:bg-amber-500 px-6 py-4 rounded-xl font-bold shadow-lg border border-amber-500 flex flex-col items-center">
+                    <span class="text-xl">⛏️ ◀</span>
+                    <span class="text-xs text-amber-200 mt-1">DIG LEFT (Z)</span>
+                </button>
+                <button id="btn-dig-right" class="flex-1 md:flex-none bg-amber-700 hover:bg-amber-600 active:bg-amber-500 px-6 py-4 rounded-xl font-bold shadow-lg border border-amber-500 flex flex-col items-center">
+                    <span class="text-xl">▶ ⛏️</span>
+                    <span class="text-xs text-amber-200 mt-1">DIG RIGHT (X)</span>
+                </button>
+            </div>
+            <div class="text-xs text-slate-400 text-center md:text-right">
+                Keyboard: Arrows/WASD to move, Z/X or J/L to dig.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Script Game Logic -->
+    <script>
+        // Game Constants & Configuration
+        const COLS = 28;
+        const ROWS = 16;
+        const TILE_SIZE = 16; // internal grid unit
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = COLS * TILE_SIZE;
+        canvas.height = ROWS * TILE_SIZE;
+
+        // Tile types:
+        // 0: Empty
+        // 1: Brick (diggable)
+        // 2: Solid (indestructible)
+        // 3: Ladder
+        // 4: Bar (rope)
+        // 5: Gold
+        // 6: Trap hole (dug brick)
+
+        const LEVELS = [
+            // Level 1
+            [
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+                [2,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+                [2,0,5,0,0,1,1,1,1,1,1,0,0,3,0,0,1,1,1,1,1,0,0,5,0,0,0,2],
+                [2,2,2,2,2,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,2,2,2,2,2,2],
+                [2,0,0,0,3,0,0,1,1,1,1,1,0,3,0,1,1,1,1,1,0,0,3,0,0,0,0,2],
+                [2,0,0,0,3,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,3,0,0,5,0,2],
+                [2,2,2,2,3,2,2,2,0,0,2,2,2,2,2,2,2,0,0,2,2,2,3,2,2,2,2,2],
+                [2,0,0,0,3,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,3,0,0,0,0,2],
+                [2,0,5,0,3,0,0,1,1,1,1,1,0,3,0,1,1,1,1,1,0,0,3,0,5,0,0,2],
+                [2,2,2,2,3,2,2,2,2,2,2,2,2,3,2,2,2,2,2,2,2,2,3,2,2,2,2,2],
+                [2,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,2],
+                [2,0,0,0,3,0,0,1,1,1,1,0,0,4,4,4,0,0,1,1,1,0,3,0,0,0,0,2],
+                [2,2,2,2,3,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,3,2,2,2,2,2],
+                [2,0,5,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,5,0,0,2],
+                [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
+            ],
+            // Level 2
+            [
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+                [2,0,0,5,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,5,0,0,0,2],
+                [2,1,1,1,1,3,1,1,1,1,0,0,2,2,2,2,0,0,1,1,1,3,1,1,1,1,1,2],
+                [2,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,2],
+                [2,0,5,0,0,3,0,0,5,0,0,1,1,1,1,1,1,0,0,5,0,3,0,0,5,0,0,2],
+                [2,2,2,2,2,3,2,2,2,2,2,0,0,0,0,0,0,2,2,2,2,3,2,2,2,2,2,2],
+                [2,0,0,0,0,3,0,0,0,0,0,0,0,3,3,0,0,0,0,0,0,3,0,0,0,0,0,2],
+                [2,0,0,1,1,3,1,1,0,0,1,1,1,3,3,1,1,1,0,0,1,3,1,1,0,0,0,2],
+                [2,0,0,0,0,3,0,0,0,0,0,0,0,3,3,0,0,0,0,0,0,3,0,0,0,0,0,2],
+                [2,2,2,2,2,3,2,2,2,2,2,2,2,3,3,2,2,2,2,2,2,3,2,2,2,2,2,2],
+                [2,0,5,0,0,0,0,0,0,0,0,0,0,3,3,0,0,0,0,0,0,0,0,0,5,0,0,2],
+                [2,1,1,1,1,1,1,1,0,0,1,1,1,3,3,1,1,1,0,0,1,1,1,1,1,1,1,2],
+                [2,0,0,0,0,0,0,0,0,0,0,0,0,3,3,0,0,0,0,0,0,0,0,0,0,0,0,2],
+                [2,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,2],
+                [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
+            ],
+            // Level 3
+            [
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+                [2,5,0,0,3,0,0,0,0,5,0,0,3,0,0,3,0,0,5,0,0,0,0,3,0,0,5,2],
+                [2,2,2,2,3,2,2,2,2,2,2,2,3,0,0,3,2,2,2,2,2,2,2,3,2,2,2,2],
+                [2,0,0,0,3,0,0,0,0,0,0,0,3,0,0,3,0,0,0,0,0,0,0,3,0,0,0,2],
+                [2,0,1,1,3,1,1,0,0,1,1,1,3,0,0,3,1,1,1,0,0,1,1,3,1,1,0,2],
+                [2,0,0,0,3,0,0,0,0,0,0,0,3,0,0,3,0,0,0,0,0,0,0,3,0,0,0,2],
+                [2,2,2,2,3,2,2,2,2,2,2,2,3,0,0,3,2,2,2,2,2,2,2,3,2,2,2,2],
+                [2,0,5,0,3,0,0,0,0,5,0,0,3,0,0,3,0,0,5,0,0,0,0,3,0,5,0,2],
+                [2,1,1,1,3,1,1,1,1,1,1,1,3,0,0,3,1,1,1,1,1,1,1,3,1,1,1,2],
+                [2,0,0,0,3,0,0,0,0,0,0,0,3,0,0,3,0,0,0,0,0,0,0,3,0,0,0,2],
+                [2,2,2,2,3,2,2,2,2,2,2,2,3,0,0,3,2,2,2,2,2,2,2,3,2,2,2,2],
+                [2,0,0,0,3,0,0,0,0,0,0,0,4,4,4,4,0,0,0,0,0,0,0,3,0,0,0,2],
+                [2,0,5,0,3,0,0,5,0,0,0,0,0,0,0,0,0,0,0,5,0,0,0,3,0,5,0,2],
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+                [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
+            ],
+            // Level 4
+            [
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+                [2,0,5,0,0,0,0,3,0,0,5,0,0,0,0,0,5,0,0,3,0,0,0,0,5,0,0,2],
+                [2,1,1,1,0,0,0,3,0,1,1,1,1,0,0,1,1,1,1,3,0,0,0,1,1,1,0,2],
+                [2,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,2],
+                [2,0,5,0,0,2,2,3,2,2,0,0,5,0,5,0,0,2,2,3,2,2,0,0,5,0,0,2],
+                [2,2,2,2,2,0,0,3,0,0,2,2,2,2,2,2,2,0,0,3,0,0,2,2,2,2,2,2],
+                [2,0,0,0,0,0,0,3,0,0,0,0,0,3,3,0,0,0,0,3,0,0,0,0,0,0,0,2],
+                [2,0,5,0,0,1,1,3,1,1,0,0,0,3,3,0,0,1,1,3,1,1,0,0,5,0,0,2],
+                [2,2,2,2,2,0,0,3,0,0,2,2,2,3,3,2,2,0,0,3,0,0,2,2,2,2,2,2],
+                [2,0,0,0,0,0,0,3,0,0,0,0,0,3,3,0,0,0,0,3,0,0,0,0,0,0,0,2],
+                [2,0,5,0,0,1,1,3,1,1,0,0,0,3,3,0,0,1,1,3,1,1,0,0,5,0,0,2],
+                [2,2,2,2,2,2,2,3,2,2,2,2,2,3,3,2,2,2,2,3,2,2,2,2,2,2,2,2],
+                [2,0,0,0,0,0,0,0,0,0,0,0,0,4,4,0,0,0,0,0,0,0,0,0,0,0,0,2],
+                [2,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,2],
+                [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
+            ],
+            // Level 5
+            [
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+                [2,5,3,0,0,0,5,0,0,3,0,0,0,5,0,0,0,3,0,0,5,0,0,0,3,5,0,2],
+                [2,2,3,2,2,2,2,2,2,3,2,2,2,2,2,2,2,3,2,2,2,2,2,2,3,2,2,2],
+                [2,0,3,0,0,0,0,0,0,3,0,0,0,0,0,0,0,3,0,0,0,0,0,0,3,0,0,2],
+                [2,0,3,0,1,1,1,0,0,3,0,1,1,1,1,1,0,3,0,0,1,1,1,0,3,0,5,2],
+                [2,2,3,2,0,0,0,0,0,3,0,0,0,0,0,0,0,3,0,0,0,0,0,2,3,2,2,2],
+                [2,0,3,0,0,5,0,0,0,3,0,0,5,0,5,0,0,3,0,0,0,5,0,0,3,0,0,2],
+                [2,0,3,1,1,1,1,1,0,3,1,1,1,3,3,1,1,3,0,1,1,1,1,1,3,0,0,2],
+                [2,2,3,0,0,0,0,0,0,3,0,0,0,3,3,0,0,3,0,0,0,0,0,0,3,2,2,2],
+                [2,0,3,0,5,0,0,5,0,3,0,5,0,3,3,0,5,3,0,5,0,0,5,0,3,0,0,2],
+                [2,2,3,2,2,2,2,2,2,3,2,2,2,3,3,2,2,3,2,2,2,2,2,2,3,2,2,2],
+                [2,0,3,0,0,0,0,0,0,0,0,0,0,4,4,0,0,0,0,0,0,0,0,0,3,0,0,2],
+                [2,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,2],
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+                [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
+            ],
+            // Level 6
+            [
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+                [2,0,0,5,0,0,3,0,0,5,0,0,3,0,0,3,0,0,5,0,0,3,0,0,5,0,0,2],
+                [2,1,1,1,1,0,3,0,1,1,1,0,3,0,0,3,0,1,1,1,0,3,0,1,1,1,1,2],
+                [2,0,0,0,0,0,3,0,0,0,0,0,3,0,0,3,0,0,0,0,0,3,0,0,0,0,0,2],
+                [2,0,5,0,0,0,3,0,0,5,0,0,3,0,0,3,0,0,5,0,0,3,0,0,5,0,0,2],
+                [2,2,2,2,2,2,3,2,2,2,2,2,3,2,2,3,2,2,2,2,2,3,2,2,2,2,2,2],
+                [2,0,0,0,0,0,3,0,0,0,0,0,3,0,0,3,0,0,0,0,0,3,0,0,0,0,0,2],
+                [2,0,0,1,1,1,3,1,1,1,0,0,3,0,0,3,0,0,1,1,1,3,1,1,0,0,0,2],
+                [2,0,5,0,0,0,3,0,0,0,0,0,3,0,0,3,0,0,0,0,0,3,0,0,5,0,0,2],
+                [2,2,2,2,2,2,3,2,2,2,2,2,3,2,2,3,2,2,2,2,2,3,2,2,2,2,2,2],
+                [2,0,0,0,0,0,3,0,0,0,0,0,3,0,0,3,0,0,0,0,0,3,0,0,0,0,0,2],
+                [2,1,1,1,1,1,3,1,1,1,1,0,4,4,4,4,0,1,1,1,1,3,1,1,1,1,1,2],
+                [2,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,2],
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+                [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
+            ],
+            // Level 7
+            [
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+                [2,5,0,0,3,0,0,5,0,0,3,0,0,0,0,0,3,0,0,5,0,0,3,0,0,5,0,2],
+                [2,2,2,0,3,0,2,2,2,0,3,0,1,1,1,0,3,0,2,2,2,0,3,0,2,2,2,2],
+                [2,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,2],
+                [2,0,5,0,3,0,1,1,1,0,3,0,5,0,5,0,3,0,1,1,1,0,3,0,5,0,0,2],
+                [2,2,2,2,3,2,0,0,0,0,3,2,2,2,2,2,3,0,0,0,0,2,3,2,2,2,2,2],
+                [2,0,0,0,3,0,0,3,3,0,3,0,0,3,3,0,3,0,3,3,0,0,3,0,0,0,0,2],
+                [2,0,5,0,3,0,0,3,3,0,3,0,0,3,3,0,3,0,3,3,0,0,3,0,5,0,0,2],
+                [2,2,2,2,3,2,2,3,3,2,3,2,2,3,3,2,3,2,3,3,2,2,3,2,2,2,2,2],
+                [2,0,0,0,3,0,0,3,3,0,3,0,0,3,3,0,3,0,3,3,0,0,3,0,0,0,0,2],
+                [2,0,5,0,3,0,0,3,3,0,0,0,0,3,3,0,0,0,3,3,0,0,3,0,5,0,0,2],
+                [2,1,1,1,3,1,1,3,3,1,1,0,0,4,4,0,0,1,1,3,3,1,1,3,1,1,1,2],
+                [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+                [2,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,2],
+                [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
+            ],
+            // Level 8
+            [
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+                [2,0,5,0,0,3,0,0,5,0,3,0,5,0,5,0,3,0,5,0,0,3,0,0,5,0,0,2],
+                [2,1,1,1,0,3,0,1,1,1,3,0,1,1,1,0,3,1,1,1,0,3,0,1,1,1,1,2],
+                [2,0,0,0,0,3,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,3,0,0,0,0,0,2],
+                [2,0,5,0,0,3,0,5,0,0,3,0,5,0,5,0,3,0,0,5,0,3,0,0,5,0,0,2],
+                [2,2,2,2,2,3,2,2,2,2,3,2,2,2,2,2,3,2,2,2,2,3,2,2,2,2,2,2],
+                [2,0,0,0,0,3,0,0,0,0,3,0,0,3,3,0,3,0,0,0,0,3,0,0,0,0,0,2],
+                [2,0,0,1,1,3,1,1,0,0,3,1,1,3,3,1,1,3,0,0,1,3,1,1,0,0,0,2],
+                [2,0,0,0,0,3,0,0,0,0,3,0,0,3,3,0,0,3,0,0,0,3,0,0,0,0,0,2],
+                [2,2,2,2,2,3,2,2,2,2,3,2,2,3,3,2,2,3,2,2,2,3,2,2,2,2,2,2],
+                [2,0,5,0,0,3,0,0,0,0,3,0,0,3,3,0,0,3,0,0,0,3,0,0,5,0,0,2],
+                [2,1,1,1,1,3,1,1,1,0,3,1,1,3,3,1,1,3,0,1,1,3,1,1,1,1,1,2],
+                [2,0,0,0,0,0,0,0,0,0,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,2],
+                [2,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,2],
+                [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
+            ],
+            // Level 9 (Master Level)
+            [
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+                [2,5,3,5,3,5,3,5,3,5,3,5,3,5,3,5,3,5,3,5,3,5,3,5,3,5,3,2],
+                [2,2,3,2,2,3,2,2,3,2,2,3,2,2,3,2,2,3,2,2,3,2,2,3,2,2,3,2],
+                [2,0,3,0,0,3,0,0,3,0,0,3,0,0,3,0,0,3,0,0,3,0,0,3,0,0,3,2],
+                [2,0,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,2],
+                [2,2,3,0,0,3,0,0,3,0,0,3,0,0,3,0,0,3,0,0,3,0,0,3,0,0,3,2],
+                [2,0,3,0,5,3,5,0,3,0,5,3,5,0,3,5,0,3,0,5,3,5,0,3,0,5,3,2],
+                [2,0,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,1,1,3,2],
+                [2,2,3,0,0,3,0,0,3,0,0,3,0,0,3,0,0,3,0,0,3,0,0,3,0,0,3,2],
+                [2,0,3,5,0,3,0,5,3,5,0,3,0,5,3,0,5,3,5,0,3,0,5,3,5,0,3,2],
+                [2,2,3,2,2,3,2,2,3,2,2,3,2,2,3,2,2,3,2,2,3,2,2,3,2,2,3,2],
+                [2,0,3,0,0,0,0,0,0,0,0,4,4,4,4,4,4,0,0,0,0,0,0,0,3,0,3,2],
+                [2,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,3,2],
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+                [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+                [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
+            ]
+        ];
+
+        let currentLevelIndex = 0;
+        let score = 0;
+        let lives = 3;
+        let gameRunning = false;
+        let map = [];
+        let player = {};
+        let guards = [];
+        let dugHoles = [];
+        let totalGold = 0;
+        let goldCollected = 0;
+
+        // Audio Helper (Web Audio API)
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        function playSound(type) {
+            if (!audioCtx) return;
+            try {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                let now = audioCtx.currentTime;
+
+                if (type === 'gold') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(587.33, now);
+                    osc.frequency.setValueAtTime(880, now + 0.08);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else if (type === 'dig') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(120, now);
+                    osc.frequency.linearRampToValueAtTime(40, now + 0.15);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'die') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.linearRampToValueAtTime(60, now + 0.4);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'win') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.setValueAtTime(554.37, now + 0.1);
+                    osc.frequency.setValueAtTime(659.25, now + 0.2);
+                    osc.frequency.setValueAtTime(880, now + 0.3);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                    osc.start(now);
+                    osc.stop(now + 0.6);
+                }
+            } catch (e) {}
+        }
+
+        function loadLevel(index) {
+            if (index >= LEVELS.length) {
+                showModal("VICTORY!", "Congratulations! You completed all 9 levels with a score of " + score + "!", "PLAY AGAIN");
+                gameRunning = false;
+                return;
+            }
+            currentLevelIndex = index;
+            document.getElementById('level-val').innerText = currentLevelIndex + 1;
+            
+            const rawMap = LEVELS[index];
+            map = rawMap.map(row => [...row]);
+            dugHoles = [];
+            totalGold = 0;
+            goldCollected = 0;
+
+            guards = [];
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (map[r][c] === 5) totalGold++;
+                }
+            }
+
+            player = {
+                x: 2 * TILE_SIZE,
+                y: 13 * TILE_SIZE,
+                vx: 0,
+                vy: 0,
+                speed: 1.5,
+                dir: 1,
+                hasGold: false
+            };
+
+            guards.push({
+                x: 24 * TILE_SIZE,
+                y: 1 * TILE_SIZE,
+                speed: 1.0,
+                dir: -1,
+                trappedTimer: 0,
+                hasGold: false
+            });
+            if (currentLevelIndex > 0) {
+                guards.push({
+                    x: 13 * TILE_SIZE,
+                    y: 7 * TILE_SIZE,
+                    speed: 1.0,
+                    dir: 1,
+                    trappedTimer: 0,
+                    hasGold: false
+                });
+            }
+            if (currentLevelIndex >= 4) {
+                guards.push({
+                    x: 5 * TILE_SIZE,
+                    y: 4 * TILE_SIZE,
+                    speed: 1.1,
+                    dir: 1,
+                    trappedTimer: 0,
+                    hasGold: false
+                });
+            }
+        }
+
+        const keys = { left: false, right: false, up: false, down: false, digLeft: false, digRight: false };
+
+        window.addEventListener('keydown', e => {
+            initAudio();
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
+            if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
+            if (e.code === 'ArrowUp' || e.code === 'KeyW') keys.up = true;
+            if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.down = true;
+            if (e.code === 'KeyZ' || e.code === 'KeyJ') { keys.digLeft = true; triggerDig(-1); }
+            if (e.code === 'KeyX' || e.code === 'KeyK') { keys.digRight = true; triggerDig(1); }
+        });
+
+        window.addEventListener('keyup', e => {
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+            if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+            if (e.code === 'ArrowUp' || e.code === 'KeyW') keys.up = false;
+            if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.down = false;
+            if (e.code === 'KeyZ' || e.code === 'KeyJ') keys.digLeft = false;
+            if (e.code === 'KeyX' || e.code === 'KeyK') keys.digRight = false;
+        });
+
+        function bindTouch(id, keyName, actionFunc) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('touchstart', e => { e.preventDefault(); initAudio(); keys[keyName] = true; if(actionFunc) actionFunc(); });
+            el.addEventListener('touchend', e => { e.preventDefault(); keys[keyName] = false; });
+            el.addEventListener('mousedown', e => { initAudio(); keys[keyName] = true; if(actionFunc) actionFunc(); });
+            el.addEventListener('mouseup', e => { keys[keyName] = false; });
+        }
+        bindTouch('btn-up', 'up');
+        bindTouch('btn-down', 'down');
+        bindTouch('btn-left', 'left');
+        bindTouch('btn-right', 'right');
+        bindTouch('btn-dig-left', 'digLeft', () => triggerDig(-1));
+        bindTouch('btn-dig-right', 'digRight', () => triggerDig(1));
+
+        function triggerDig(dir) {
+            if (!gameRunning) return;
+            let tileX = Math.floor((player.x + TILE_SIZE / 2) / TILE_SIZE) + dir;
+            let tileY = Math.floor((player.y + TILE_SIZE + 2) / TILE_SIZE);
+
+            if (tileX >= 0 && tileX < COLS && tileY >= 0 && tileY < ROWS) {
+                if (map[tileY][tileX] === 1) {
+                    if (tileY > 0 && map[tileY - 1][tileX] !== 2) {
+                        map[tileY][tileX] = 6;
+                        dugHoles.push({ x: tileX, y: tileY, timer: 300 });
+                        playSound('dig');
+                    }
+                }
+            }
+        }
+
+        function update() {
+            if (!gameRunning) return;
+
+            for (let i = dugHoles.length - 1; i >= 0; i--) {
+                let h = dugHoles[i];
+                h.timer--;
+                if (h.timer <= 0) {
+                    map[h.y][h.x] = 1;
+                    let px = Math.floor((player.x + TILE_SIZE / 2) / TILE_SIZE);
+                    let py = Math.floor((player.y + TILE_SIZE / 2) / TILE_SIZE);
+                    if (px === h.x && py === h.y) {
+                        playerDie();
+                    }
+                    guards.forEach(g => {
+                        let gx = Math.floor((g.x + TILE_SIZE / 2) / TILE_SIZE);
+                        let gy = Math.floor((g.y + TILE_SIZE / 2) / TILE_SIZE);
+                        if (gx === h.x && gy === h.y) {
+                            g.x = 13 * TILE_SIZE;
+                            g.y = 1 * TILE_SIZE;
+                            if (g.hasGold) {
+                                map[gy][gx] = 5;
+                                g.hasGold = false;
+                            }
+                        }
+                    });
+                    dugHoles.splice(i, 1);
+                }
+            }
+
+            let pGridX = Math.floor((player.x + TILE_SIZE / 2) / TILE_SIZE);
+            let pGridY = Math.floor((player.y + TILE_SIZE / 2) / TILE_SIZE);
+
+            // Improved ladder detection with horizontal tolerance and automatic snapping for smooth climbing
+            let isLadderTile = (r, c) => (r >= 0 && r < ROWS && c >= 0 && c < COLS && map[r][c] === 3);
+            let nearLadderX = false;
+            let targetLadderCol = pGridX;
+            
+            for (let cCheck = Math.max(0, pGridX - 1); cCheck <= Math.min(COLS - 1, pGridX + 1); cCheck++) {
+                if (isLadderTile(pGridY, cCheck) || isLadderTile(pGridY + 1, cCheck) || isLadderTile(pGridY - 1, cCheck)) {
+                    let tileCenterX = cCheck * TILE_SIZE + TILE_SIZE / 2;
+                    if (Math.abs((player.x + TILE_SIZE / 2) - tileCenterX) < TILE_SIZE * 0.8) {
+                        nearLadderX = true;
+                        targetLadderCol = cCheck;
+                        break;
+                    }
+                }
+            }
+
+            let onLadder = isLadderTile(pGridY, pGridX) || isLadderTile(pGridY + 1, pGridX) || nearLadderX;
+            let onBar = (map[pGridY][pGridX] === 4);
+            let standingOnSolid = false;
+
+            let feetY = player.y + TILE_SIZE;
+            let feetTileY = Math.floor(feetY / TILE_SIZE);
+            let leftFootTileX = Math.floor(player.x / TILE_SIZE);
+            let rightFootTileX = Math.floor((player.x + TILE_SIZE - 1) / TILE_SIZE);
+
+            if (feetTileY < ROWS && pGridX >= 0 && pGridX < COLS) {
+                let below1 = map[feetTileY][leftFootTileX];
+                let below2 = map[feetTileY][rightFootTileX];
+                if ((below1 === 1 || below1 === 2 || below1 === 6) || (below2 === 1 || below2 === 2 || below2 === 6)) {
+                    if (Math.abs(feetY - feetTileY * TILE_SIZE) <= 2) {
+                        standingOnSolid = true;
+                    }
+                }
+            }
+
+            let moveX = 0;
+            if (keys.left) { moveX = -player.speed; player.dir = -1; }
+            if (keys.right) { moveX = player.speed; player.dir = 1; }
+
+            let moveY = 0;
+            let canClimbUp = onLadder || isLadderTile(pGridY, pGridX) || isLadderTile(pGridY - 1, pGridX);
+            let canClimbDown = onLadder || isLadderTile(pGridY, pGridX) || isLadderTile(pGridY + 1, pGridX);
+
+            if (keys.up && canClimbUp) {
+                moveY = -player.speed;
+                let targetX = targetLadderCol * TILE_SIZE;
+                player.x += (targetX - player.x) * 0.4; // Smoothly snap to ladder center
+            } else if (keys.down && canClimbDown) {
+                moveY = player.speed;
+                let targetX = targetLadderCol * TILE_SIZE;
+                player.x += (targetX - player.x) * 0.4;
+            }
+
+            if (!standingOnSolid && !onLadder && !onBar) {
+                player.y += 2.5;
+            } else {
+                if (moveY !== 0) {
+                    player.y += moveY;
+                }
+            }
+
+            if (moveX !== 0) {
+                let nextX = player.x + moveX;
+                let testTileX = Math.floor((nextX + (moveX > 0 ? TILE_SIZE - 1 : 0)) / TILE_SIZE);
+                let testTileY = Math.floor((player.y + TILE_SIZE / 2) / TILE_SIZE);
+                if (testTileX >= 0 && testTileX < COLS && testTileY >= 0 && testTileY < ROWS) {
+                    let t = map[testTileY][testTileX];
+                    if (t !== 1 && t !== 2) {
+                        player.x = nextX;
+                    }
+                } else {
+                    player.x = nextX;
+                }
+            }
+
+            player.x = Math.max(0, Math.min(canvas.width - TILE_SIZE, player.x));
+            player.y = Math.max(0, Math.min(canvas.height - TILE_SIZE, player.y));
+
+            pGridX = Math.floor((player.x + TILE_SIZE / 2) / TILE_SIZE);
+            pGridY = Math.floor((player.y + TILE_SIZE / 2) / TILE_SIZE);
+
+            if (map[pGridY][pGridX] === 5) {
+                map[pGridY][pGridX] = 0;
+                goldCollected++;
+                score += 100;
+                document.getElementById('score-val').innerText = score;
+                playSound('gold');
+
+                if (goldCollected >= totalGold) {
+                    playSound('win');
+                    setTimeout(() => {
+                        loadLevel(currentLevelIndex + 1);
+                    }, 1000);
+                }
+            }
+
+            guards.forEach(g => {
+                let gGridX = Math.floor((g.x + TILE_SIZE / 2) / TILE_SIZE);
+                let gGridY = Math.floor((g.y + TILE_SIZE / 2) / TILE_SIZE);
+
+                if (map[gGridY][gGridX] === 6) {
+                    g.trappedTimer++;
+                    if (g.trappedTimer > 180) {
+                        g.trappedTimer = 0;
+                        g.y -= TILE_SIZE;
+                    }
+                    return;
+                } else {
+                    g.trappedTimer = 0;
+                }
+
+                let pCenterX = player.x;
+                let gCenterX = g.x;
+
+                if (gCenterX < pCenterX) g.x += g.speed * 0.7;
+                else if (gCenterX > pCenterX) g.x -= g.speed * 0.7;
+
+                let gOnLadder = map[gGridY][gGridX] === 3;
+                if (gOnLadder) {
+                    if (g.y < player.y) g.y += g.speed * 0.5;
+                    else if (g.y > player.y) g.y -= g.speed * 0.5;
+                } else {
+                    let gFeetY = g.y + TILE_SIZE;
+                    let gFeetTileY = Math.floor(gFeetY / TILE_SIZE);
+                    let gLeftX = Math.floor(g.x / TILE_SIZE);
+                    let gRightX = Math.floor((g.x + TILE_SIZE - 1) / TILE_SIZE);
+                    let gStanding = false;
+                    if (gFeetTileY < ROWS && gLeftX >= 0 && gRightX < COLS) {
+                        if (map[gFeetTileY][gLeftX] > 0 && map[gFeetTileY][gLeftX] !== 3 && map[gFeetTileY][gLeftX] !== 4) gStanding = true;
+                        if (map[gFeetTileY][gRightX] > 0 && map[gFeetTileY][gRightX] !== 3 && map[gFeetTileY][gRightX] !== 4) gStanding = true;
+                    }
+                    if (!gStanding) {
+                        g.y += 2;
+                    }
+                }
+
+                let dist = Math.hypot(player.x - g.x, player.y - g.y);
+                if (dist < TILE_SIZE * 0.75) {
+                    playerDie();
+                }
+            });
+        }
+
+        function playerDie() {
+            playSound('die');
+            lives--;
+            document.getElementById('lives-val').innerText = lives;
+            if (lives <= 0) {
+                gameRunning = false;
+                showModal("GAME OVER", "You ran out of lives! Final Score: " + score, "TRY AGAIN");
+            } else {
+                player.x = 2 * TILE_SIZE;
+                player.y = 13 * TILE_SIZE;
+            }
+        }
+
+        function showModal(title, desc, btnText) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('start-btn').innerText = btnText;
+            document.getElementById('modal-overlay').classList.remove('hidden');
+        }
+
+        function draw() {
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    let t = map[r][c];
+                    let x = c * TILE_SIZE;
+                    let y = r * TILE_SIZE;
+
+                    if (t === 1) {
+                        ctx.fillStyle = '#b45309';
+                        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                        ctx.strokeStyle = '#78350f';
+                        ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+                        ctx.fillStyle = '#d97706';
+                        ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, 3);
+                        ctx.fillRect(x + 2, y + 9, TILE_SIZE - 4, 3);
+                    } else if (t === 2) {
+                        ctx.fillStyle = '#334155';
+                        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                        ctx.strokeStyle = '#1e293b';
+                        ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+                    } else if (t === 3) {
+                        ctx.fillStyle = '#f8fafc';
+                        ctx.fillRect(x + 3, y, 2, TILE_SIZE);
+                        ctx.fillRect(x + TILE_SIZE - 5, y, 2, TILE_SIZE);
+                        ctx.fillRect(x + 3, y + 4, TILE_SIZE - 6, 2);
+                        ctx.fillRect(x + 3, y + 11, TILE_SIZE - 6, 2);
+                    } else if (t === 4) {
+                        ctx.fillStyle = '#94a3b8';
+                        ctx.fillRect(x, y + 2, TILE_SIZE, 3);
+                    } else if (t === 5) {
+                        ctx.fillStyle = '#facc15';
+                        ctx.beginPath();
+                        ctx.arc(x + TILE_SIZE / 2, y + TILE_SIZE / 2 + 2, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = '#ca8a04';
+                        ctx.beginPath();
+                        ctx.arc(x + TILE_SIZE / 2, y + TILE_SIZE / 2, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else if (t === 6) {
+                        ctx.fillStyle = '#1e1b4b';
+                        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                        ctx.strokeStyle = '#4338ca';
+                        ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+                    }
+                }
+            }
+
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillRect(player.x + 3, player.y + 6, TILE_SIZE - 6, TILE_SIZE - 6);
+            ctx.fillStyle = '#f97316';
+            ctx.fillRect(player.x + 4, player.y + 1, TILE_SIZE - 8, 6);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(player.x + (player.dir > 0 ? 9 : 3), player.y + 3, 4, 3);
+
+            guards.forEach(g => {
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(g.x + 3, g.y + 6, TILE_SIZE - 6, TILE_SIZE - 6);
+                ctx.fillStyle = '#fee2e2';
+                ctx.fillRect(g.x + 4, g.y + 1, TILE_SIZE - 8, 6);
+            });
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            if (gameRunning) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            initAudio();
+            document.getElementById('modal-overlay').classList.add('hidden');
+            score = 0;
+            lives = 3;
+            document.getElementById('score-val').innerText = score;
+            document.getElementById('lives-val').innerText = lives;
+            loadLevel(0);
+            gameRunning = true;
+            requestAnimationFrame(gameLoop);
+        });
+
+        loadLevel(0);
+        draw();
+    </script>
+</body>
+</html>
